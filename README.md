@@ -1,18 +1,8 @@
----  
-title:    GoogleTest for Testing C Code
-subtitle: Using the Google Testing and Mocking Framework for Unit Testing C Code  
-author:   Tamás Dezső  
-date:     Sept 15, 2025  
-abstract: |  
-    GoogleTest (GTest) is one of the most widely used frameworks for
-    unit testing in C++ projects. While designed for C++, it can also be
-    applied to C codebases, enabling developers to take advantage of its
-    expressive assertions, test fixtures, and integration with build and
-    CI tools. This article explains how to set up GTest for C projects,
-    demonstrates practical techniques for testing C functions, and
-    highlights how mocking can improve testability.
-...
-<!-- pandoc ut/README.md -o GTest_for_C_v1.0.pdf \
+% GoogleTest for Testing C Code  
+% Tamás Dezső  
+% Sept 15, 2025  
+
+<!-- pandoc README.md -o GTest_for_C_v1.0.pdf \
     -V papersize:A4 \
     -V documentclass=scrartcl \
     -V geometry:margin=1in \
@@ -22,8 +12,19 @@ abstract: |
     --pdf-engine=xelatex \
     -V mainfont='Roboto Light' \
     -V monofont='Ubuntu Mono' \
-    -V fontsize=9pt
+    -V fontsize=10pt
 -->
+
+
+# Introduction
+
+GoogleTest (GTest) is one of the most widely used frameworks for
+unit testing in C++ projects. While designed for C++, it can also be
+applied to C codebases, enabling developers to take advantage of its
+expressive assertions, test fixtures, and integration with build and
+CI tools. This article explains how to set up GTest for C projects,
+demonstrates practical techniques for testing C functions, and
+highlights how mocking can improve testability.
 
 
 # What You’ll Gain
