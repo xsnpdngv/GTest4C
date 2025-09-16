@@ -1,6 +1,6 @@
 % GoogleTest for Testing C Code  
 % Tamás Dezső  
-% Sept 15, 2025  
+% Sept 16, 2025  
 
 <!-- pandoc README.md -o GTest_for_C_v1.0.pdf \
     -V papersize:A4 \
@@ -27,9 +27,9 @@ demonstrates practical techniques for testing C functions, and
 highlights how mocking can improve testability.
 
 
-# What You’ll Gain
+# Scope and Focus
 
-By reading this article and following the examples, you will learn how to:
+In this document the following topics and areas are covered:
 
 - Write clear and maintainable tests for C code using GoogleTest.
 - Use assertions to express expected behavior.
@@ -39,11 +39,11 @@ By reading this article and following the examples, you will learn how to:
 - Use death tests to detect crashes, aborts, and segmentation faults safely.
 - Integrate tests into CI/CD pipelines with JSON output for automated reporting.
 
-This article walks you step-by-step through practical examples and
-provides a ready-to-clone project structure.
+This article walks step-by-step through practical examples and provides
+a ready-to-play project structure.
 
 
-# Why Use GTest for C Code?
+# Advantages of GTest for C Code
 
 GTest offers a powerful, modern unit testing environment even for C projects:
 
@@ -65,11 +65,35 @@ To use GTest for C code, the followings are needed:
 2.	CMake or Makefile configuration that links C modules into a C++ test executable.
 3.	C headers wrapped with extern "C" when included in C++ files, so that function names are not mangled.
 
+_CMakeLists.txt_:
+
+```cmake
+cmake_minimum_required(VERSION 3.14)
+project(my_project)
+
+# GoogleTest requires at least C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
+  # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+```
+
+For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
+in [[GTest Guide][]].
+
 
 # Asserts: Expressing Expectations Clearly
 
 Assertions are the building blocks of unit testing. They define the
-expected behavior of your code and provide meaningful error messages
+expected behavior of the code and provide meaningful error messages
 when the behavior deviates. GTest offers a rich set of assertions that
 go far beyond simple equality checks.
 
@@ -80,6 +104,15 @@ GTest distinguishes between:
 
 This distinction allows precise control over test flow and error reporting.
 
+## Example
+
+```c++
+```
+
+
+For the complete rerefence, see
+[Assertions](https://google.github.io/googletest/reference/assertions.html)
+in [[GTest Guide][]].
 
 # Fixtures: Sharing Setup and Teardown
 
@@ -89,6 +122,10 @@ is error-prone. Fixtures let you centralize preparation and cleanup so
 every test starts with a known state.
 
 ## Example
+
+```c++
+...
+```
 
 
 # Parameterized Testing: Avoiding Repetition
@@ -100,6 +137,13 @@ multiple input sets automatically.
 
 ## Example
 
+```c++
+...
+```
+
+For the complete reference, see
+[`INSTANTIATE_TEST_SUITE_P`](https://google.github.io/googletest/reference/testing.html#INSTANTIATE_TEST_SUITE_P)
+in [[GTest Guide][]].
 
 # Mocking: Isolating Dependencies
 
@@ -109,7 +153,13 @@ dependencies with controlled test doubles. While C doesn’t have built-in
 mocking, GTest (via GoogleMock) provides a way to mock functions called
 from C modules by declaring them in C++.
 
+The Nice, the Strict, and the Naggy
+
 ## Example
+
+```c++
+...
+```
 
 
 # Death Tests: Verifying Program Termination
@@ -148,17 +198,12 @@ ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
 ##  Example
 
 ```c++
-extern "C" {
-void doHarakiri() { int *p = NULL; *p = 42; }
-}
-
-TEST(DeathTest, SegfaultDetected) {
-    EXPECT_EXIT(doHarakiri(), testing::KilledBySignal(15), ".*");
-}
+...
 ```
 
 For the complete reference, see
-[Death Assertions](https://google.github.io/googletest/reference/assertions.html#death).
+[Death Assertions](https://google.github.io/googletest/reference/assertions.html#death)
+in [[GTest Guide][]].
 
 
 # CI: Running GTest with JSON Output
