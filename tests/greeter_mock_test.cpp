@@ -1,15 +1,27 @@
 #include <gtest/gtest.h>
 extern "C" {
 #include "greeter.h"
+#include "logger.h"
 }
 #include "logger_mock.hh"
 
 
 using ::testing::NiceMock;
-using ::testing::_;
-using ::testing::StrEq;
 using ::testing::Return;
+using ::testing::ReturnArg;
 using ::testing::AnyNumber;
+using ::testing::AtLeast;
+using ::testing::ResultOf;
+using ::testing::Eq;
+using ::testing::StrEq;
+using ::testing::MatchesRegex;
+using ::testing::Pointee;
+using ::testing::Pointer;
+using ::testing::AllOf;
+using ::testing::NotNull;
+using ::testing::Invoke;
+using ::testing::InSequence;
+using ::testing::_;
 
 
 TEST(LoggerMockTest, LoggerMockWorks)
@@ -34,13 +46,16 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
 {
     NiceMock<LoggerMock> logger;
     EXPECT_CALL(logger, LoggerWriteLog(_)).Times(AnyNumber());
-    EXPECT_CALL(logger, LoggerWriteLog(StrEq("Hey, You!"))).Times(2);
+    EXPECT_CALL(logger, LoggerWriteLog(MatchesRegex("Hey..Siri."))).Times(2);
 
-    auto gr = greeterCreate("Hey");
-    greeterGreet(gr, "Siri");
-    greeterGreet(gr, "You");
-    greeterGreet(gr, "Man");
-    greeterGreet(gr, "You");
+    auto hey = greeterCreate("Hey");
+    greeterGreet(hey, "You");
+    greeterGreet(hey, "Alexa");
+    greeterGreet(hey, "Siri");
+    greeterGreet(hey, "Ho");
+    greeterGreet(hey, "Siri");
+
+    greeterDestroy(&hey);
 }
 
 TEST(GreeterMockTest, IgnoresLoggerError)
@@ -48,6 +63,11 @@ TEST(GreeterMockTest, IgnoresLoggerError)
     NiceMock<LoggerMock> logger;
     ON_CALL(logger, LoggerWriteLog).WillByDefault(Return(-1));
 
-    auto g = greeterCreate("Oh");
-    EXPECT_STREQ(greeterGreet(g, "Yeah"), "Oh, Yeah!");
+    auto oh = greeterCreate("Oh");
+    EXPECT_STREQ(greeterGreet(oh, "Yeah"), "Oh, Yeah!");
+    EXPECT_STREQ(greeterGreet(oh, "My God"), "Oh, My God!");
+    EXPECT_STREQ(greeterGreet(oh, "No"), "Oh, No!");
+    EXPECT_STREQ(greeterGreet(oh, "Dear"), "Oh, Dear!");
+
+    greeterDestroy(&oh);
 }
