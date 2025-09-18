@@ -12,6 +12,11 @@ typedef struct
 
 } GreetCase;
 
+inline void PrintTo(const GreetCase& gcase, ::std::ostream* os) {
+    *os << "GreetCase{name=\"" << (gcase.name ?: "(null)")
+        << "\", output=\"" << gcase.output << "\"}";
+}
+
 
 class GreeterParamTest : public testing::TestWithParam<GreetCase>
 {
