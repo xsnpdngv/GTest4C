@@ -9,6 +9,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -ggdb")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors -fpermissive -Wno-write-strings -Wno-format-truncation")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O0 -Wno-format-truncation")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(COV "Enable coverage reporting" OFF)
+if(COV)
+    message(STATUS "Building with coverage flags")
+    set(COVERAGE_FLAGS "--coverage -O0 -g")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COVERAGE_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+endif()
+
 
 include(FetchContent)
 FetchContent_Declare(
@@ -24,6 +33,7 @@ FetchContent_MakeAvailable(googletest)
 enable_testing()
 
 include(GoogleTest)
+include(CTest)
 
 include_directories(
     {GTEST_INCLUDE_DIRS}
@@ -59,7 +69,6 @@ target_link_libraries( greeter_param_test ${GTEST_LIBRARIES} gmock gmock_main pt
 gtest_discover_tests( greeter_param_test )
 
 
-
 add_executable( greeter_death_test
     tests/greeter_death_test.cpp
     src/greeter.c
@@ -76,5 +85,3 @@ add_executable( greeter_mock_test
 )
 target_link_libraries( greeter_mock_test ${GTEST_LIBRARIES} gmock gmock_main pthread )
 gtest_discover_tests( greeter_mock_test )
-
-# add_test(NAME RunTests COMMAND test_all --gtest_output=json:results.json)

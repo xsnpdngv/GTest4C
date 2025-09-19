@@ -57,6 +57,25 @@ GTest offers a powerful, modern unit testing environment even for C projects:
 By adding a thin C++ layer, all of these strengths can be applied directly to C modules.
 
 
+# CUnit vs GTest
+
+Feature / Aspect          | CUnit                        | GTest
+--------------------------|------------------------------|----------------------------------------------
+Main function             | Must be implemented manually | Provided by the framework
+Adding tests              | Manual registration required | Automatic registration via macros
+Assertions                | Limited, basic               | Rich set of assertions (`EXPECT_*`, `ASSERT_*`)
+Output                    | Minimal, often unclear       | Detailed, shows file, line, and message
+Mocking                   | Not supported                | Supported via GoogleMock
+Test fixtures             | Limited                      | Full support for setup/teardown
+Parameterized tests       | Not supported                | Fully supported
+CI / Reporting            | Poor integration             | Supports XML/JSON output, CI friendly
+Selective test execution  | Difficult                    | Easy via test names, regex, or labels
+Scalability               | Hard for large projects      | Designed for large projects
+Community / Documentation | Small community              | Large community, active maintenance
+
+: Comparison with CUnit
+
+
 # Setting Up
 
 To use GTest for C code, the followings are needed:
@@ -252,6 +271,69 @@ JSON or XML.
 ```
 
 
+# CTest
+
+CTest is CMake’s companion test driver. It provides a consistent way to
+discover, run, and report unit tests across projects and platforms. When
+integrated with frameworks like Google Test, CTest becomes a powerful
+tool for local development, CI pipelines, and regression testing.
+
+
+## Reference
+
+See `man ctest`
+
+Command                     | Description
+----------------------------|------------------------------------------------------
+`ctest`                     | Run all tests
+`ctest -N`                  | List tests without running
+`ctest -V`                  | Show test output while running
+`ctest --output-on-failure` | Show output only for failed tests
+`ctest --rerun-failed`      | Re-run tests that failed last time
+`ctest -R <regex>`          | Run tests whose names match regex.
+`ctest -R "GreeterMock.*"`  | Run all tests in the `MathTest` suite
+`ctest -E <regex>`          | Exclude tests matching regex
+`ctest -R ".*" -E "Flaky"`  | Run all tests except those with “Flaky” in the name
+`ctest -I <start>,<end>`    | Run tests by index range
+`ctest --test-output-json results.json` | Write test results in JSON (CMake ≥ 3.21)
+`ctest --show-only=json-v1` | Show test list in JSON format
+`ctest -j <N>`              | Run tests in parallel with N jobs
+`ctest --timeout <sec>`     | Set a global timeout in seconds
+`ctest --repeat-until-fail <N>` | Repeat tests up to N times (find flaky tests)
+`ctest --schedule-random`   | Run tests in random order
+`ctest --stop-on-failure`   | Stop after the first failing test
+
+: CTest Cheat Sheet
+
+```bash
+mkdir build
+cd build
+
+cmake .. # -DCOV=OFF
+make
+ctest -D Experimental # run tests without coverage
+ctest -D MemoryCheck  # run memleak check
+
+cmake .. -DCOV=ON
+make
+ctest -D Experimental # run tests with coverage
+```
+
+## Adding Tests in CMake
+
+To enable CTest in a project, add the following to your CMakeLists.txt:
+
+```cmake
+enable_testing()
+
+add_executable(my_tests test_main.cpp)
+target_link_libraries(my_tests PRIVATE GTest::gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(my_tests)
+```
+
+
 
 # Build
 
@@ -260,7 +342,7 @@ mkdir build
 cd build
 cmake ..
 make
-make test
+make test # or ctest
 ```
 
 

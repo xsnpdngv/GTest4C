@@ -40,6 +40,7 @@ TEST(GreeterMockTest, CallsLogger)
 
     auto gr = greeterCreate("Hey");
     greeterGreet(gr, "You");
+    greeterDestroy(&gr);
 }
 
 TEST(GreeterMockTest, CallsLoggerWithMessage)
