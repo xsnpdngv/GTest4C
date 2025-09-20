@@ -71,10 +71,11 @@ INSTANTIATE_TEST_SUITE_P(
     GreeterParamTest,
     ::testing::Values(
         GreetCase{ .name = NULL, .output = "Hello, World!" },
-        GreetCase{ "World", "Hello, World!" },
-        GreetCase{ "Alice", "Hello, Alice!" },
-        GreetCase{ "Bob",   "Hello, Bob!"   },
-        GreetCase{ "Hello", "Hello, Hello!" },
-        GreetCase{ "Leo",   "Hello, Leo!"   }
+        GreetCase{ "World",   "Hello, World!" },
+        GreetCase{ "Hello",   "Hello, Hello!" },
+        GreetCase{ "Leo",     "Hello, Leo!" },
+        GreetCase{ "Alice",   "Hello, Alice!" },
+        GreetCase{ "Bob",     "Hello, Bob!" },
+        GreetCase{ "Clarice", "Hello, Clarice!" }
     )
 );

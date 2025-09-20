@@ -6,7 +6,6 @@
 #include <string.h>
 #include <assert.h>
 
-
 struct greeter_t
 {
     char *greeting; // "Hello", "Hola", "Bonjour", "Ciao", "Üdv", etc

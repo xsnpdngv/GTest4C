@@ -1,7 +1,6 @@
 % GoogleTest for Testing C Code  
 % Tamás Dezső  
-% Sept 16, 2025  
-
+% Sept 20, 2025  
 <!-- pandoc README.md -o GTest_for_C_v1.0.pdf \
     -V papersize:A4 \
     -V documentclass=scrartcl \
@@ -14,6 +13,17 @@
     -V monofont='Ubuntu Mono' \
     -V fontsize=10pt
 -->
+
+
+# Outline
+
+1. What is GTest
+2. What are the advantages of using Gtest in general
+3. What are the differences between CUnit and GTest
+4. How can C and C++ code work together
+5. Google Test primer
+6. Google Mock for dummies
+7. References
 
 
 # Introduction
@@ -31,13 +41,14 @@ highlights how mocking can improve testability.
 
 In this document the following topics and areas are covered:
 
-- Write clear and maintainable tests for C code using GoogleTest.
-- Use assertions to express expected behavior.
-- Apply fixtures to share setup and teardown logic across multiple tests.
-- Create parameterized tests to cover multiple input combinations efficiently.
-- Mock dependencies to test modules in isolation.
-- Use death tests to detect crashes, aborts, and segmentation faults safely.
-- Integrate tests into CI/CD pipelines with JSON output for automated reporting.
+- Writing clear and maintainable tests for C code using GoogleTest.
+- Using assertions to express expected behavior.
+- Applying fixtures to share setup and teardown logic across multiple tests.
+- Creating parameterized tests to cover multiple input combinations efficiently.
+- Mocking dependencies to test modules in isolation.
+- Using death tests to detect crashes, aborts, and segmentation faults safely.
+- Integrating tests into CI/CD pipelines with JSON output for automated reporting.
+- Submitting test, coverage and memory-check results into open source dashboard
 
 This article walks step-by-step through practical examples and provides
 a ready-to-play project structure.
@@ -53,6 +64,8 @@ GTest offers a powerful, modern unit testing environment even for C projects:
 - __Maintainable reporting__: human-readable output, JSON/XML for CI, clear failure messages.
 - __Cross-platform__: works on Linux, macOS, Windows, and embedded systems.
 - __Mocking support__: with GoogleMock (gMock), for testing interactions with dependencies.
+- __Dashboard integration__: seamless submission of build, test, coverage, and memory-check
+  results to CDash, enabling centralized tracking, history, and comparison across builds and platforms.
 
 By adding a thin C++ layer, all of these strengths can be applied directly to C modules.
 
@@ -75,38 +88,124 @@ Community / Documentation | Small community              | Large community, acti
 
 : Comparison with CUnit
 
+# C and C++ Interoperability
 
-# Setting Up
+In projects combining C and C++ the main concern is name mangling. C++
+compilers mangle function names to support overloading, while C does
+not. To allow C++ code to call C functions, use extern "C" in headers.
 
-To use GTest for C code, the followings are needed:
+    gtest4c/
+    └─ extern_C/
+       ├── hash.cpp
+       ├── hash.h
+       ├── main.c
+       └── CMakeLists.txt
 
-1.	GoogleTest installed (via package manager or as a submodule in your project).
-2.	CMake or Makefile configuration that links C modules into a C++ test executable.
-3.	C headers wrapped with extern "C" when included in C++ files, so that function names are not mangled.
+```cpp
+// hash.h
+#ifndef HASH_WRAP_H
+#define HASH_WRAP_H
 
-_CMakeLists.txt_:
+#include <stddef.h>
 
-```cmake
-cmake_minimum_required(VERSION 3.14)
-project(my_project)
+size_t hash_string(const char *str);
 
-# GoogleTest requires at least C++17
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+#endif // HASH_WRAP_H
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
-  # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+
+
+// hash.cpp
+#include <string>
+#include <functional>
+
+extern "C" size_t hash_string(const char *str) { return std::hash<std::string>{}(str); }
+
+
+
+// main.c
+#include "hash.h"
+
+#include <stdio.h>
+#include <stdint.h>
+
+int main(void)
+{
+    const char *s = "Hello, C and C++!";
+    size_t h = hash_string(s);
+    printf("Hash of '%s' is %zu\n", s, h);
+    return 0;
+}
 ```
 
-For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
-in [[GTest Guide][]].
+```bash
+cmake -S . -B build
+cmake --build build
+build/main
+# --> Hash of 'Hello, C and C++!' is 2115457373660723382
+```
+
+
+# C Code Under Test
+
+    gtest4c/
+    └─ src/
+       ├── greeter.c
+       └── greeter.h
+
+```c
+// greeter.h
+#ifndef GREETER_H
+#define GREETER_H
+
+typedef struct greeter_t greeter_t;
+
+greeter_t *greeterCreate(const char *greeting);
+const char *greeterGreet(greeter_t *self, const char *name);
+void greeterDestroy(greeter_t **self);
+
+#endif
+
+
+
+// greeter.c
+#include "greeter.h"
+#include "logger.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+struct greeter_t
+{
+    char *greeting; // "Hello", "Hola", "Bonjour", "Ciao", "Üdv", etc
+    char buffer[100]; // output goes here
+};
+
+greeter_t *greeterCreate(const char *greeting)
+{
+    if( ! greeting) { return NULL; }
+    greeter_t *self = malloc(sizeof(greeter_t));
+    self->greeting = strdup(greeting);
+    return self;
+}
+
+const char *greeterGreet(greeter_t *self, const char *name)
+{
+    if( ! self) { return NULL; }
+    snprintf(self->buffer, sizeof(self->buffer), "%s, %s!", self->greeting, name ?: "World");
+    loggerWriteLog(self->buffer);
+    return self->buffer;
+}
+
+void greeterDestroy(greeter_t **self)
+{
+    assert(self);
+    if( ! *self) { return; }
+    free((*self)->greeting);
+    free((*self));
+    *self = NULL;
+}
+```
 
 
 # Asserts: Expressing Expectations Clearly
@@ -174,6 +273,21 @@ from C modules by declaring them in C++.
 
 The Nice, the Strict, and the Naggy
 
+Image how would mocking work with CUnit:
+- Each different behavior needs a distinct implementation
+- Each implementation needs a distinct build
+
+How are mocks evaluated?
+
+GMock is your friend if any of the following problems is bothering you:
+
+- Your tests are slow as they depend on expensive resources (e.g. a database).
+- Your tests are brittle as some resources they use are unreliable (e.g. the network).
+- You want to test how your code handles failures but it’s not easy to cause them.
+- You need to make sure that your module interacts with other modules in the right way.
+- You want to “mock out” the dependencies, except that they don’t have mock implementations yet.
+
+
 ## Example
 
 ```c++
@@ -223,6 +337,52 @@ ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
 For the complete reference, see
 [Death Assertions](https://google.github.io/googletest/reference/assertions.html#death)
 in [[GTest Guide][]].
+
+
+# Setting Up
+
+To use GTest for C code, the followings are needed:
+
+1.	GoogleTest installed (via package manager or as a submodule in your project).
+2.	CMake or Makefile configuration that links C modules into a C++ test executable.
+3.	C headers wrapped with extern "C" when included in C++ files, so that function names are not mangled.
+
+_CMakeLists.txt_:
+
+```cmake
+cmake_minimum_required(VERSION 3.14)
+project(my_project)
+
+# GoogleTest requires at least C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
+  # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+```
+
+For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
+in [[GTest Guide][]].
+
+    gtest4c/
+    ├─ tests/
+    │  ├── greeter_test.cpp
+    │  ├── greeter_test_fixture.cpp
+    │  ├── greeter_param_test.cpp
+    │  ├── greeter_death_test.cpp
+    │  └── greeter_mock_test.cpp
+    ├─ mock/
+    │  ├── logger_mock.cpp
+    │  ├── logger_mock.hpp
+    │  └── single.hpp
+    └- CMakeLists.txt
 
 
 # CI: Running GTest with JSON Output
@@ -306,17 +466,12 @@ Command                     | Description
 : CTest Cheat Sheet
 
 ```bash
-mkdir build
-cd build
+src_dir=.
+build_dir=build
 
-cmake .. # -DCOV=OFF
-make
-ctest -D Experimental # run tests without coverage
-ctest -D MemoryCheck  # run memleak check
-
-cmake .. -DCOV=ON
-make
-ctest -D Experimental # run tests with coverage
+cmake -S ${src_dir} -B ${build_dir} # -DCOV=ON
+cmake --build ${build_dir}
+ctest --test-dir ${build_dir} -D Experimental
 ```
 
 ## Adding Tests in CMake

@@ -1,3 +1,4 @@
+// main.c
 #include "hash.h"
 
 #include <stdio.h>
