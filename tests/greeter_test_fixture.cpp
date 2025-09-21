@@ -1,9 +1,8 @@
-// greeter_test.cpp
+// greeter_test_fixture.cpp
 #include <gtest/gtest.h>
 extern "C" {
 #include "greeter.h"
 }
-
 
 class GreeterTestFixture : public testing::Test
 {

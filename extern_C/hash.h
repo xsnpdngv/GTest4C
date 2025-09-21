@@ -1,9 +1,9 @@
 // hash.h
-#ifndef HASH_WRAP_H
-#define HASH_WRAP_H
+#ifndef HASH_H_
+#define HASH_H_
 
 #include <stddef.h>
 
-size_t hash_string(const char* str);
+size_t hash_string(const char *str);
 
-#endif // HASH_WRAP_H
+#endif // HASH_H_

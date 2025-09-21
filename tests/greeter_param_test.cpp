@@ -1,9 +1,8 @@
-// greeter_test.cpp
+// greeter_param_test.cpp
 #include <gtest/gtest.h>
 extern "C" {
 #include "greeter.h"
 }
-
 
 typedef struct
 {
@@ -12,11 +11,10 @@ typedef struct
 
 } GreetCase;
 
-inline void PrintTo(const GreetCase& gcase, ::std::ostream* os) {
+inline void PrintTo(const GreetCase &gcase, ::std::ostream *os) {
     *os << "GreetCase{name=\"" << (gcase.name ?: "(null)")
         << "\", output=\"" << gcase.output << "\"}";
 }
-
 
 class GreeterParamTest : public testing::TestWithParam<GreetCase>
 {
@@ -33,7 +31,6 @@ class GreeterParamTest : public testing::TestWithParam<GreetCase>
   protected:
     greeter_t *g_;
 };
-
 
 /*
 TEST_P(FooTest, DoesBlah) {

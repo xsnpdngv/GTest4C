@@ -1,10 +1,10 @@
+// greeter_mock_test.cpp
 #include <gtest/gtest.h>
 extern "C" {
 #include "greeter.h"
 #include "logger.h"
 }
 #include "logger_mock.hh"
-
 
 using ::testing::NiceMock;
 using ::testing::Return;
@@ -22,7 +22,6 @@ using ::testing::NotNull;
 using ::testing::Invoke;
 using ::testing::InSequence;
 using ::testing::_;
-
 
 TEST(LoggerMockTest, LoggerMockWorks)
 {

@@ -4,15 +4,11 @@ extern "C" {
 #include "greeter.h"
 }
 
-
-// Basic Assertions /////////////////////////////
-
 /*
 TEST(TestSuiteName, TestName) {
   ... test body ...
 }
 */
-
 
 TEST(GreeterTest, DoesntCreateGreeter)
 {

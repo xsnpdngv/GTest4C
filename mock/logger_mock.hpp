@@ -1,6 +1,6 @@
-// logger_mock.hh
-#ifndef LOGGER_MOCK_HH_
-#define LOGGER_MOCK_HH_
+// logger_mock.hpp
+#ifndef LOGGER_MOCK_HPP_
+#define LOGGER_MOCK_HPP_
 
 #include <gmock/gmock.h>
 #include "single.hh"
@@ -14,4 +14,4 @@ class LoggerMock : public Single<LoggerMock>
     MOCK_METHOD(int, LoggerWriteLog, (const char *message));
 };
 
-#endif
+#endif  // LOGGER_MOCK_HPP_

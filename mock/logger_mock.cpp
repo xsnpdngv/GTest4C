@@ -1,8 +1,7 @@
 // logger_mock.cpp
-#include "logger_mock.hh"
+#include "logger_mock.hpp"
 
-extern "C"
-{
+extern "C" {
 
 int loggerWriteLog(const char *message) {
     return LoggerMock::GetInstance().LoggerWriteLog(message);

@@ -1,6 +1,6 @@
 % GoogleTest for Testing C Code  
 % Tamás Dezső  
-% Sept 20, 2025  
+% Sept 23, 2025  
 <!-- pandoc README.md -o GTest_for_C_v1.0.pdf \
     -V papersize:A4 \
     -V documentclass=scrartcl \
@@ -15,24 +15,13 @@
 -->
 
 
-# Outline
-
-1. What is GTest
-2. What are the advantages of using Gtest in general
-3. What are the differences between CUnit and GTest
-4. How can C and C++ code work together
-5. Google Test primer
-6. Google Mock for dummies
-7. References
-
-
 # Introduction
 
 GoogleTest (GTest) is one of the most widely used frameworks for
 unit testing in C++ projects. While designed for C++, it can also be
 applied to C codebases, enabling developers to take advantage of its
 expressive assertions, test fixtures, and integration with build and
-CI tools. This article explains how to set up GTest for C projects,
+CI tools. This document explains how to set up GTest for C projects,
 demonstrates practical techniques for testing C functions, and
 highlights how mocking can improve testability.
 
@@ -48,9 +37,9 @@ In this document the following topics and areas are covered:
 - Mocking dependencies to test modules in isolation.
 - Using death tests to detect crashes, aborts, and segmentation faults safely.
 - Integrating tests into CI/CD pipelines with JSON output for automated reporting.
-- Submitting test, coverage and memory-check results into open source dashboard
+- Submitting test, coverage and memory-check results into open source dashboard.
 
-This article walks step-by-step through practical examples and provides
+This document walks step-by-step through practical examples and provides
 a ready-to-play project structure.
 
 
@@ -58,14 +47,15 @@ a ready-to-play project structure.
 
 GTest offers a powerful, modern unit testing environment even for C projects:
 
-- __Mature and well-supported__: battle-tested and integrated with CI/CD pipelines.
-- __Rich feature set__: assertions, fixtures, parameterized tests, death tests, and mocking.
-- __Organized tests__: group tests into suites, run selectively, and share setup/teardown.
-- __Maintainable reporting__: human-readable output, JSON/XML for CI, clear failure messages.
-- __Cross-platform__: works on Linux, macOS, Windows, and embedded systems.
-- __Mocking support__: with GoogleMock (gMock), for testing interactions with dependencies.
-- __Dashboard integration__: seamless submission of build, test, coverage, and memory-check
-  results to CDash, enabling centralized tracking, history, and comparison across builds and platforms.
+- __Mature and well-supported__: battle-tested and integrated with CI/CD pipelines
+- __Rich feature set__: assertions, fixtures, parameterized tests, death tests
+- __Mocking support__: with GoogleMock (gMock), for testing interactions with dependencies
+- __Organized tests__: group tests into suites, run selectively, and share setup/teardown
+- __Maintainable reporting__: human-readable output, JSON/XML for CI, clear failure messages
+- __CMake and CTest integration__: works hand-in-hand with CMake build- and CTest testing framework
+- __Cross-platform__: works on Linux, macOS, Windows, and embedded systems
+- __Dashboard submission__: seamless submission to CDash, enabling centralized tracking,
+  history, and comparison across builds and platforms
 
 By adding a thin C++ layer, all of these strengths can be applied directly to C modules.
 
@@ -88,40 +78,46 @@ Community / Documentation | Small community              | Large community, acti
 
 : Comparison with CUnit
 
-# C and C++ Interoperability
+
+# C plus C++
 
 In projects combining C and C++ the main concern is name mangling. C++
 compilers mangle function names to support overloading, while C does
 not. To allow C++ code to call C functions, use extern "C" in headers.
 
     gtest4c/
-    └─ extern_C/
-       ├── hash.cpp
-       ├── hash.h
-       ├── main.c
-       └── CMakeLists.txt
+    └── extern_C/
+        ├── hash.cpp
+        ├── hash.h
+        ├── main.c
+        └── CMakeLists.txt
+
+
+## Code
 
 ```cpp
 // hash.h
-#ifndef HASH_WRAP_H
-#define HASH_WRAP_H
+#ifndef HASH_H_
+#define HASH_H_
 
 #include <stddef.h>
 
 size_t hash_string(const char *str);
 
-#endif // HASH_WRAP_H
+#endif // HASH_H_
+```
 
-
-
+```c++
 // hash.cpp
+extern "C" {
+#include "hash.h"
+}
 #include <string>
-#include <functional>
 
-extern "C" size_t hash_string(const char *str) { return std::hash<std::string>{}(str); }
+size_t hash_string(const char *str) { return std::hash<std::string>{}(str); }
+```
 
-
-
+```c
 // main.c
 #include "hash.h"
 
@@ -137,6 +133,8 @@ int main(void)
 }
 ```
 
+## Build and run
+
 ```bash
 cmake -S . -B build
 cmake --build build
@@ -145,12 +143,47 @@ build/main
 ```
 
 
-# C Code Under Test
+# CMake and CTest
+
+When building non-trivial C or C++ projects, managing the build process
+quickly becomes challenging. Different platforms, compilers, and
+development environments have their own requirements. A set of
+handwritten Makefiles or ad-hoc scripts often grows messy, hard to
+maintain, and difficult to port. This is where CMake comes in.
+
+__CMake__ is a cross-platform build system generator. Instead of directly
+compiling your code, it generates native build files (such as Unix
+Makefiles, Ninja files, or Visual Studio project files) based on a
+high-level configuration written in `CMakeLists.txt`.
+
+With CMake, the necessities of a project can be described (source files,
+libraries, include paths, dependencies), and CMake takes care of how to
+build it on the target system. This means the same project can be
+compiled on Linux, macOS, and Windows without changing your build
+description.
+
+__CTest__ is CMake’s companion tool for running tests. If you write unit
+or integration tests for your project (for example with GoogleTest,
+Catch2, or even plain C test executables), you can register them in your
+CMakeLists.txt. CTest then provides a uniform way to discover and
+execute tests, report results, and integrate with CI systems and
+dashboards (such as CDash).
+
+CMake and CTest let you focus more on your code and tests, and less on
+wrestling with platform-specific build and test scripts. They give your
+project a professional, reproducible, and maintainable build and test
+setup from the start.
+
+
+# C Code to Test
+
+The following C code is used in the upcoming chapters as the code that
+needs to be tested.
 
     gtest4c/
-    └─ src/
-       ├── greeter.c
-       └── greeter.h
+    └── src/
+        ├── greeter.c
+        └── greeter.h
 
 ```c
 // greeter.h
@@ -164,9 +197,9 @@ const char *greeterGreet(greeter_t *self, const char *name);
 void greeterDestroy(greeter_t **self);
 
 #endif
+```
 
-
-
+```c++
 // greeter.c
 #include "greeter.h"
 #include "logger.h"
@@ -222,15 +255,93 @@ GTest distinguishes between:
 
 This distinction allows precise control over test flow and error reporting.
 
+
 ## Example
 
-```c++
-```
+    gtest4c/
+    ├── src/
+    │   ├── greeter.c
+    │   ├── greeter.h
+    │   ├── logger.c
+    │   └── logger.h
+    ├── tests/
+    │   └── greeter_test.cpp
+    └── CMakeLists.txt
 
+```c++
+// greeter_test.cpp
+#include <gtest/gtest.h>
+extern "C" {
+#include "greeter.h"
+}
+
+/*
+TEST(TestSuiteName, TestName) {
+  ... test body ...
+}
+*/
+
+TEST(GreeterTest, DoesntCreateGreeter)
+{
+    greeter_t *noGreeter = greeterCreate(NULL);
+    EXPECT_EQ(noGreeter, nullptr);
+}
+
+TEST(GreeterTest, CreatesGreeter)
+{
+    greeter_t *emptyGreeter = greeterCreate("");
+    ASSERT_NE(emptyGreeter, nullptr);
+    greeterDestroy(&emptyGreeter);
+
+    greeter_t *formalGreeter = greeterCreate("Good Morning");
+    ASSERT_NE(formalGreeter, nullptr);
+    greeterDestroy(&formalGreeter);
+}
+
+TEST(GreeterTest, DestroysGreeter)
+{
+    auto friendlyGreeter = greeterCreate("Hi");
+    ASSERT_NE(friendlyGreeter, nullptr);
+
+    greeterDestroy(&friendlyGreeter);
+    ASSERT_EQ(friendlyGreeter, nullptr);
+
+    greeterDestroy(&friendlyGreeter);
+    ASSERT_EQ(friendlyGreeter, nullptr);
+}
+
+TEST(GreeterTest, ReturnsNullIfNoSelf)
+{
+    EXPECT_EQ(greeterGreet(NULL, NULL), nullptr);
+    EXPECT_EQ(greeterGreet(NULL, ""), nullptr);
+    EXPECT_EQ(greeterGreet(NULL, "asdf"), nullptr);
+}
+
+TEST(GreeterTest, GreetsGenerally)
+{
+    auto g = greeterCreate("Hello");
+    EXPECT_STREQ(greeterGreet(g, NULL), "Hello, World!");
+    greeterDestroy(&g);
+}
+
+TEST(GreeterTest, GreetsPersonally)
+{
+    auto g = greeterCreate("Good Morning");
+    EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, Sunshine!");
+    EXPECT_STREQ(greeterGreet(g, "Vietnam"), "Good Morning, Vietnam!");
+    greeterDestroy(&g);
+
+    g = greeterCreate("Bonjour");
+    EXPECT_STREQ(greeterGreet(g, "Alice"), "Bonjour, Alice!");
+    EXPECT_STREQ(greeterGreet(g, "Bob"), "Bonjour, Bob!");
+    greeterDestroy(&g);
+}
+```
 
 For the complete rerefence, see
 [Assertions](https://google.github.io/googletest/reference/assertions.html)
 in [[GTest Guide][]].
+
 
 # Fixtures: Sharing Setup and Teardown
 
@@ -241,8 +352,49 @@ every test starts with a known state.
 
 ## Example
 
+    gtest4c/
+    ├── src/
+    │   ├── greeter.c
+    │   ├── greeter.h
+    │   ├── logger.c
+    │   └── logger.h
+    ├── tests/
+    │   └── greeter_test_fixture.cpp
+    └── CMakeLists.txt
+
 ```c++
-...
+// greeter_test_fixture.cpp
+#include <gtest/gtest.h>
+extern "C" {
+#include "greeter.h"
+}
+
+class GreeterTestFixture : public testing::Test
+{
+  protected:
+    void SetUp() override {
+        g_ = greeterCreate("Hello");
+        ASSERT_NE(g_, nullptr);
+    }
+
+    void TearDown() override {
+        greeterDestroy(&g_);
+    }
+
+  protected:
+    greeter_t *g_;
+};
+
+/*
+TEST_F(TestFixtureClassName, TestName) {
+  ... test body ...
+}
+*/
+
+TEST_F(GreeterTestFixture, GreetsPersonally)
+{
+    EXPECT_STREQ(greeterGreet(g_, "Szia, Szevasz"), "Hello, Szia, Szevasz!");
+}
 ```
 
 
@@ -255,13 +407,101 @@ multiple input sets automatically.
 
 ## Example
 
+    gtest4c/
+    ├── src/
+    │   ├── greeter.c
+    │   ├── greeter.h
+    │   ├── logger.c
+    │   └── logger.h
+    ├── tests/
+    │   └── greeter_param_test.cpp
+    └── CMakeLists.txt
+
 ```c++
-...
+// greeter_param_test.cpp
+#include <gtest/gtest.h>
+extern "C" {
+#include "greeter.h"
+}
+
+typedef struct
+{
+    const char *name;
+    const char *output;
+
+} GreetCase;
+
+inline void PrintTo(const GreetCase &gcase, ::std::ostream *os) {
+    *os << "GreetCase{name=\"" << (gcase.name ?: "(null)")
+        << "\", output=\"" << gcase.output << "\"}";
+}
+
+class GreeterParamTest : public testing::TestWithParam<GreetCase>
+{
+  protected:
+    void SetUp() override {
+        g_ = greeterCreate("Hello");
+        ASSERT_NE(g_, nullptr);
+    }
+
+    void TearDown() override {
+        greeterDestroy(&g_);
+    }
+
+  protected:
+    greeter_t *g_;
+};
+
+/*
+TEST_P(FooTest, DoesBlah) {
+  // Inside a test, access the test parameter with the GetParam() method
+  // of the TestWithParam<T> class:
+  EXPECT_TRUE(foo.Blah(GetParam()));
+  ...
+}
+
+TEST_P(FooTest, HasBlahBlah) {
+  ...
+}
+
+INSTANTIATE_TEST_SUITE_P(MeenyMinyMoe,
+                         FooTest,
+                         testing::Values("meeny", "miny", "moe"));
+*/
+
+TEST_P(GreeterParamTest, ReturnsNonEmpty)
+{
+    GreetCase param = GetParam();
+    const char *result = greeterGreet(g_, param.name);
+    ASSERT_NE(result, nullptr);
+    EXPECT_STRNE(result, "");
+}
+
+TEST_P(GreeterParamTest, GreetsAsExpected)
+{
+    GreetCase param = GetParam();
+    EXPECT_STREQ(greeterGreet(g_, param.name), param.output);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    GreeterTests,
+    GreeterParamTest,
+    ::testing::Values(
+        GreetCase{ .name = NULL, .output = "Hello, World!" },
+        GreetCase{ "World",   "Hello, World!" },
+        GreetCase{ "Hello",   "Hello, Hello!" },
+        GreetCase{ "Leo",     "Hello, Leo!" },
+        GreetCase{ "Alice",   "Hello, Alice!" },
+        GreetCase{ "Bob",     "Hello, Bob!" },
+        GreetCase{ "Clarice", "Hello, Clarice!" }
+    )
+);
 ```
 
 For the complete reference, see
 [`INSTANTIATE_TEST_SUITE_P`](https://google.github.io/googletest/reference/testing.html#INSTANTIATE_TEST_SUITE_P)
 in [[GTest Guide][]].
+
 
 # Mocking: Isolating Dependencies
 
@@ -271,14 +511,6 @@ dependencies with controlled test doubles. While C doesn’t have built-in
 mocking, GTest (via GoogleMock) provides a way to mock functions called
 from C modules by declaring them in C++.
 
-The Nice, the Strict, and the Naggy
-
-Image how would mocking work with CUnit:
-- Each different behavior needs a distinct implementation
-- Each implementation needs a distinct build
-
-How are mocks evaluated?
-
 GMock is your friend if any of the following problems is bothering you:
 
 - Your tests are slow as they depend on expensive resources (e.g. a database).
@@ -287,11 +519,172 @@ GMock is your friend if any of the following problems is bothering you:
 - You need to make sure that your module interacts with other modules in the right way.
 - You want to “mock out” the dependencies, except that they don’t have mock implementations yet.
 
+The Nice, the Strict, and the Naggy
+
+- NiceMock: Ignores unexpected calls.
+- NaggyMock: Warns on unexpected calls (default).
+- StrictMock: Fails on unexpected calls.
+
+GMock evaluates expectations dynamically as the code runs, and finally
+verifies that all declared expectations were met at test teardown.
 
 ## Example
 
+    gtest4c/
+    ├── src/
+    │   ├── greeter.c
+    │   └── greeter.h
+    ├── tests/
+    │   └── greeter_mock_test.cpp
+    ├── mock/
+    │   ├── logger_mock.cpp
+    │   ├── logger_mock.hpp
+    │   └── single.hpp
+    └── CMakeLists.txt
+
 ```c++
-...
+// logger_mock.hpp
+#ifndef LOGGER_MOCK_HPP_
+#define LOGGER_MOCK_HPP_
+
+#include <gmock/gmock.h>
+#include "single.hh"
+// extern "C" {
+// #include "logger.h"
+// }
+
+class LoggerMock : public Single<LoggerMock>
+{
+  public:
+    MOCK_METHOD(int, LoggerWriteLog, (const char *message));
+};
+
+#endif  // LOGGER_MOCK_HPP_
+```
+
+```c++
+// logger_mock.cpp
+#include "logger_mock.hpp"
+
+extern "C" {
+
+int loggerWriteLog(const char *message) {
+    return LoggerMock::GetInstance().LoggerWriteLog(message);
+}
+
+} // extern "C"
+```
+
+```c++
+// greeter_mock_test.cpp
+#include <gtest/gtest.h>
+extern "C" {
+#include "greeter.h"
+#include "logger.h"
+}
+#include "logger_mock.hh"
+
+using ::testing::NiceMock;
+using ::testing::Return;
+using ::testing::ReturnArg;
+using ::testing::AnyNumber;
+using ::testing::AtLeast;
+using ::testing::ResultOf;
+using ::testing::Eq;
+using ::testing::StrEq;
+using ::testing::MatchesRegex;
+using ::testing::Pointee;
+using ::testing::Pointer;
+using ::testing::AllOf;
+using ::testing::NotNull;
+using ::testing::Invoke;
+using ::testing::InSequence;
+using ::testing::_;
+
+TEST(LoggerMockTest, LoggerMockWorks)
+{
+    LoggerMock logger;
+    EXPECT_CALL(logger, LoggerWriteLog).Times(100);
+
+    for(int i = 0; i < 100; ++i)
+        loggerWriteLog("message");
+}
+
+TEST(GreeterMockTest, CallsLogger)
+{
+    LoggerMock logger;
+    EXPECT_CALL(logger, LoggerWriteLog(_)).Times(1);
+
+    auto gr = greeterCreate("Hey");
+    greeterGreet(gr, "You");
+    greeterDestroy(&gr);
+}
+
+TEST(GreeterMockTest, CallsLoggerWithMessage)
+{
+    NiceMock<LoggerMock> logger;
+    EXPECT_CALL(logger, LoggerWriteLog(_)).Times(AnyNumber());
+    EXPECT_CALL(logger, LoggerWriteLog(MatchesRegex(".*Siri.*"))).Times(AtLeast(2));
+
+    auto h = greeterCreate("Hey");
+    greeterGreet(h, "You");
+    greeterGreet(h, "Alexa");
+    greeterGreet(h, "Siri");
+    greeterGreet(h, "Ho");
+    greeterGreet(h, "Siri");
+
+    greeterDestroy(&h);
+}
+
+TEST(GreeterTest, CallsLoggerInOrder)
+{
+    NiceMock<LoggerMock> logger;
+
+    EXPECT_CALL(logger, LoggerWriteLog(_));
+    {
+        InSequence seq;
+        EXPECT_CALL(logger, LoggerWriteLog(StrEq("Yo, Dude!")));
+        EXPECT_CALL(logger, LoggerWriteLog(StrEq("Yo, MTV Raps!")));
+    }
+
+    auto y = greeterCreate("Yo");
+    greeterGreet(y, "Dude");
+    greeterGreet(y, "mama so fat");
+    greeterGreet(y, "MTV Raps");
+    greeterDestroy(&y);
+}
+
+TEST(GreeterMockTest, IgnoresLoggerError)
+{
+    NiceMock<LoggerMock> logger;
+    ON_CALL(logger, LoggerWriteLog).WillByDefault(Return(-1));
+
+    auto oh = greeterCreate("Oh");
+    EXPECT_STREQ(greeterGreet(oh, "Yeah"  ), "Oh, Yeah!");
+    EXPECT_STREQ(greeterGreet(oh, "My God"), "Oh, My God!");
+    EXPECT_STREQ(greeterGreet(oh, "No"    ), "Oh, No!");
+    EXPECT_STREQ(greeterGreet(oh, "Dear"  ), "Oh, Dear!");
+
+    greeterDestroy(&oh);
+}
+
+TEST(GreeterMockTest, IgnoresLoggerError2)
+{
+    NiceMock<LoggerMock> logger;
+    int callCount = 0;
+
+    EXPECT_CALL(logger, LoggerWriteLog(_))
+        .WillRepeatedly(
+            Invoke(
+                [&callCount](const char *msg) {
+                    return (++callCount == 2) ? -1 : 0;
+                }));
+
+    auto i = greeterCreate("I love you");
+    EXPECT_STREQ(greeterGreet(i, "Pumpkin"), "I love you, Pumpkin!");
+    EXPECT_STREQ(greeterGreet(i, "Honey-Bunny"), "I love you, Honey-Bunny!");
+    greeterDestroy(&i);
+}
 ```
 
 
@@ -330,8 +723,55 @@ ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
 
 ##  Example
 
+    gtest4c/
+    ├── src/
+    │   ├── greeter.c
+    │   ├── greeter.h
+    │   ├── logger.c
+    │   └── logger.h
+    ├── tests/
+    │   └── greeter_death_test.cpp
+    └── CMakeLists.txt
+
 ```c++
-...
+// greeter_death_test.cpp
+#include <gtest/gtest.h>
+extern "C" {
+#include "greeter.h"
+}
+
+/*
+// Verifies that statement causes the process to terminate with an
+// exit status that satisfies predicate, and produces stderr output
+// that matches matcher.
+EXPECT_EXIT(statement, exit_status_predicate, stderr_matcher)
+ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
+
+// Returns true if the program exited normally with the given exit status code.
+::testing::ExitedWithCode(exit_code);
+
+// Returns true if the program was killed by the given signal.
+// Not available on Windows.
+::testing::KilledBySignal(signal_number);
+*/
+
+using testing::KilledBySignal;
+// using testing::ExitedWithCode;
+
+TEST(GreeterDeathTest, AbortsOnDestroyAssert)
+{
+    EXPECT_EXIT(greeterDestroy(NULL), KilledBySignal(SIGABRT), ".*Assertion.*");
+}
+
+TEST(GreeterDeathTest, SegfaultsForInvalidNameArg)
+{
+    EXPECT_EXIT(greeterCreate((const char *)4), KilledBySignal(SIGSEGV), ".*");
+}
+
+TEST(GreeterDeathTest, SegfaultsForInvalidSelfArg)
+{
+    EXPECT_EXIT(greeterGreet((greeter_t *)42, "Joe Black"), KilledBySignal(SIGSEGV), ".*");
+}
 ```
 
 For the complete reference, see
@@ -370,19 +810,6 @@ FetchContent_MakeAvailable(googletest)
 
 For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
 in [[GTest Guide][]].
-
-    gtest4c/
-    ├─ tests/
-    │  ├── greeter_test.cpp
-    │  ├── greeter_test_fixture.cpp
-    │  ├── greeter_param_test.cpp
-    │  ├── greeter_death_test.cpp
-    │  └── greeter_mock_test.cpp
-    ├─ mock/
-    │  ├── logger_mock.cpp
-    │  ├── logger_mock.hpp
-    │  └── single.hpp
-    └- CMakeLists.txt
 
 
 # CI: Running GTest with JSON Output
@@ -468,8 +895,9 @@ Command                     | Description
 ```bash
 src_dir=.
 build_dir=build
+cov_toggle=OFF
 
-cmake -S ${src_dir} -B ${build_dir} # -DCOV=ON
+cmake -S ${src_dir} -B ${build_dir} -DCOV=${cov_toggle}
 cmake --build ${build_dir}
 ctest --test-dir ${build_dir} -D Experimental
 ```
