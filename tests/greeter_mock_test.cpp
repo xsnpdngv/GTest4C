@@ -4,7 +4,7 @@ extern "C" {
 #include "greeter.h"
 #include "logger.h"
 }
-#include "logger_mock.hh"
+#include "logger_mock.hpp"
 
 using ::testing::NiceMock;
 using ::testing::Return;

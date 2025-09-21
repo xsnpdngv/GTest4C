@@ -56,7 +56,7 @@ TEST(GreeterTest, GreetsGenerally)
 TEST(GreeterTest, GreetsPersonally)
 {
     auto g = greeterCreate("Good Morning");
-    EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, Sunshine!");
+    EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, SunshinE!");
     EXPECT_STREQ(greeterGreet(g, "Vietnam"), "Good Morning, Vietnam!");
     greeterDestroy(&g);
 

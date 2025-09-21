@@ -548,7 +548,7 @@ verifies that all declared expectations were met at test teardown.
 #define LOGGER_MOCK_HPP_
 
 #include <gmock/gmock.h>
-#include "single.hh"
+#include "single.hpp"
 // extern "C" {
 // #include "logger.h"
 // }
@@ -582,7 +582,7 @@ extern "C" {
 #include "greeter.h"
 #include "logger.h"
 }
-#include "logger_mock.hh"
+#include "logger_mock.hpp"
 
 using ::testing::NiceMock;
 using ::testing::Return;
@@ -827,29 +827,94 @@ JSON or XML.
 ## Generating JSON Output
 
 ```bash
-./mytest --gtest_output=json:results.json
+build/greeter_test --gtest_output=json:results.json
 ```
 
 ```json
+/* results.json */
 {
+  "tests": 6,
+  "failures": 1,
+  "disabled": 0,
+  "errors": 0,
+  "timestamp": "2025-09-21T22:01:28Z",
+  "time": "0s",
+  "name": "AllTests",
   "testsuites": [
     {
-      "name": "MathUtilsTest",
-      "tests": 2,
-      "failures": 0,
-      "time": 0.002,
+      "name": "GreeterTest",
+      "tests": 6,
+      "failures": 1,
+      "disabled": 0,
+      "errors": 0,
+      "timestamp": "2025-09-21T22:01:28Z",
+      "time": "0s",
       "testsuite": [
         {
-          "name": "Add",
-          "status": "run",
-          "result": "passed",
-          "time": 0.001
+          "name": "DoesntCreateGreeter",
+          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
+          "line": 13,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2025-09-21T22:01:28Z",
+          "time": "0s",
+          "classname": "GreeterTest"
         },
         {
-          "name": "Divide",
-          "status": "run",
-          "result": "passed",
-          "time": 0.001
+          "name": "CreatesGreeter",
+          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
+          "line": 19,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2025-09-21T22:01:28Z",
+          "time": "0s",
+          "classname": "GreeterTest"
+        },
+        {
+          "name": "DestroysGreeter",
+          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
+          "line": 30,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2025-09-21T22:01:28Z",
+          "time": "0s",
+          "classname": "GreeterTest"
+        },
+        {
+          "name": "ReturnsNullIfNoSelf",
+          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
+          "line": 42,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2025-09-21T22:01:28Z",
+          "time": "0s",
+          "classname": "GreeterTest"
+        },
+        {
+          "name": "GreetsGenerally",
+          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
+          "line": 49,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2025-09-21T22:01:28Z",
+          "time": "0s",
+          "classname": "GreeterTest"
+        },
+        {
+          "name": "GreetsPersonally",
+          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
+          "line": 56,
+          "status": "RUN",
+          "result": "COMPLETED",
+          "timestamp": "2025-09-21T22:01:28Z",
+          "time": "0s",
+          "classname": "GreeterTest",
+          "failures": [
+            {
+              "failure": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp:59\nExpected equality of these values:\n  greeterGreet(g, \"Sunshine\")\n    Which is: \"Good Morning, Sunshine!\"\n  \"Good Morning, SunshinE!\"\n",
+              "type": ""
+            }
+          ]
         }
       ]
     }
