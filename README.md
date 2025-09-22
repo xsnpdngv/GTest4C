@@ -7,7 +7,7 @@
     -V geometry:margin=1in \
     -V colorlinks \
     --toc \
-    --toc-depth=2 \
+    --toc-depth=1 \
     --pdf-engine=xelatex \
     -V mainfont='Roboto Light' \
     -V monofont='Ubuntu Mono' \
@@ -28,7 +28,7 @@ highlights how mocking can improve testability.
 
 # Scope and Focus
 
-In this document the following topics and areas are covered:
+The following topics and areas are meant to be covered:
 
 - Writing clear and maintainable tests for C code using GoogleTest.
 - Using assertions to express expected behavior.
@@ -39,11 +39,10 @@ In this document the following topics and areas are covered:
 - Integrating tests into CI/CD pipelines with JSON output for automated reporting.
 - Submitting test, coverage and memory-check results into open source dashboard.
 
-This document walks step-by-step through practical examples and provides
-a ready-to-play project structure.
+The following chapters walk step-by-step through practical examples.
 
 
-# Advantages of GTest for C Code
+# Advantages of GTest
 
 GTest offers a powerful, modern unit testing environment even for C projects:
 
@@ -79,70 +78,6 @@ Community / Documentation | Small community              | Large community, acti
 : Comparison with CUnit
 
 
-# C plus C++
-
-In projects combining C and C++ the main concern is name mangling. C++
-compilers mangle function names to support overloading, while C does
-not. To allow C++ code to call C functions, use extern "C" in headers.
-
-    gtest4c/
-    └── extern_C/
-        ├── hash.cpp
-        ├── hash.h
-        ├── main.c
-        └── CMakeLists.txt
-
-
-## Code
-
-```cpp
-// hash.h
-#ifndef HASH_H_
-#define HASH_H_
-
-#include <stddef.h>
-
-size_t hash_string(const char *str);
-
-#endif // HASH_H_
-```
-
-```c++
-// hash.cpp
-extern "C" {
-#include "hash.h"
-}
-#include <string>
-
-size_t hash_string(const char *str) { return std::hash<std::string>{}(str); }
-```
-
-```c
-// main.c
-#include "hash.h"
-
-#include <stdio.h>
-#include <stdint.h>
-
-int main(void)
-{
-    const char *s = "Hello, C and C++!";
-    size_t h = hash_string(s);
-    printf("Hash of '%s' is %zu\n", s, h);
-    return 0;
-}
-```
-
-## Build and run
-
-```bash
-cmake -S . -B build
-cmake --build build
-build/main
-# --> Hash of 'Hello, C and C++!' is 2115457373660723382
-```
-
-
 # CMake and CTest
 
 When building non-trivial C or C++ projects, managing the build process
@@ -175,20 +110,95 @@ project a professional, reproducible, and maintainable build and test
 setup from the start.
 
 
+# C plus C++
+
+In projects combining C and C++ the main concern is name mangling. C++
+compilers mangle function names to support overloading, while C does
+not. To allow C++ code to call C functions, use __`extern "C"`__ in
+headers.
+
+    GTest4C/
+    └── externC/
+        ├── hash.cpp
+        ├── hash.h
+        ├── main.c
+        └── CMakeLists.txt
+
+
+```cpp
+// hash.h
+#ifndef HASH_H_
+#define HASH_H_
+
+#include <stddef.h>
+
+size_t hash_string(const char *str);
+
+#endif // HASH_H_
+```
+
+```c++
+// hash.cpp
+extern "C" {
+#include "hash.h"
+}
+#include <string>
+
+size_t hash_string(const char *str) { return std::hash<std::string>{}(str); }
+```
+
+```c
+// main.c
+#include "hash.h"
+#include <stdio.h>
+#include <stdint.h>
+
+int main(void)
+{
+    const char *s = "Hello, C and C++!";
+    size_t h = hash_string(s);
+    printf("Hash of '%s' is %zu\n", s, h);
+    return 0;
+}
+```
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.10)
+project(CppHashExample C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+
+add_executable( main
+    main.c
+    hash.cpp
+)
+```
+
+## Build and Run
+
+```bash
+cmake -S . -B build
+cmake --build build
+build/main
+# --> Hash of 'Hello, C and C++!' is 2115457373660723382
+```
+
+
 # C Code to Test
 
 The following C code is used in the upcoming chapters as the code that
 needs to be tested.
 
-    gtest4c/
+    GTest4C/
     └── src/
         ├── greeter.c
         └── greeter.h
 
 ```c
 // greeter.h
-#ifndef GREETER_H
-#define GREETER_H
+#ifndef GREETER_H_
+#define GREETER_H_
 
 typedef struct greeter_t greeter_t;
 
@@ -196,13 +206,13 @@ greeter_t *greeterCreate(const char *greeting);
 const char *greeterGreet(greeter_t *self, const char *name);
 void greeterDestroy(greeter_t **self);
 
-#endif
+#endif // GREETER_H_
 ```
 
 ```c++
 // greeter.c
 #include "greeter.h"
-#include "logger.h"
+#include "logger.h"  // external dependency
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -226,7 +236,7 @@ const char *greeterGreet(greeter_t *self, const char *name)
 {
     if( ! self) { return NULL; }
     snprintf(self->buffer, sizeof(self->buffer), "%s, %s!", self->greeting, name ?: "World");
-    loggerWriteLog(self->buffer);
+    loggerWriteLog(self->buffer);  // external dependency
     return self->buffer;
 }
 
@@ -239,6 +249,74 @@ void greeterDestroy(greeter_t **self)
     *self = NULL;
 }
 ```
+
+## External Dependency
+
+    GTest4C/
+    └── lib/
+        └── logger/
+            ├── logger.c
+            └── logger.h
+
+```c
+// logger.h
+#ifndef LOGGER_H_
+#define LOGGER_H_
+
+int loggerWriteLog(const char *message);
+
+#endif // LOGGER_H_
+```
+
+```cmake
+# CMakeLists.txt (excerpt)
+add_library( logger SHARED
+    lib/logger/logger.c
+)
+```
+
+
+# Setup GTest in CMake
+
+To use GTest for C code, the followings are needed:
+
+1.	GoogleTest installed (via package manager or as a submodule in your project).
+2.	CMake or Makefile configuration that links C modules into a C++ test executable.
+3.	C headers wrapped with extern "C" when included in C++ files, so that function names are not mangled.
+
+
+```cmake
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.14)
+project(GTest4C C CXX)
+
+set(CMAKE_CXX_STANDARD 17) # GTest requires at least C++17
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(FetchContent)
+FetchContent_Declare(
+  googletest
+  URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
+  # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
+)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+include(GoogleTest)
+include(CTest)
+
+include_directories(
+    {GTEST_INCLUDE_DIRS}
+    lib/logger
+    src
+    mock
+)
+
+# ...
+```
+
+For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
+in [[GTest Guide][]].
 
 
 # Asserts: Expressing Expectations Clearly
@@ -258,15 +336,23 @@ This distinction allows precise control over test flow and error reporting.
 
 ## Example
 
-    gtest4c/
+    GTest4C/
     ├── src/
     │   ├── greeter.c
-    │   ├── greeter.h
-    │   ├── logger.c
-    │   └── logger.h
+    │   └── greeter.h
     ├── tests/
     │   └── greeter_test.cpp
     └── CMakeLists.txt
+
+```cmake
+# CMakeLists.txt (excerpt)
+add_executable( greeter_test
+    tests/greeter_test.cpp
+    src/greeter.c
+)
+target_link_libraries( greeter_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
+gtest_discover_tests( greeter_test )
+```
 
 ```c++
 // greeter_test.cpp
@@ -352,15 +438,23 @@ every test starts with a known state.
 
 ## Example
 
-    gtest4c/
+    GTest4C/
     ├── src/
     │   ├── greeter.c
-    │   ├── greeter.h
-    │   ├── logger.c
-    │   └── logger.h
+    │   └── greeter.h
     ├── tests/
     │   └── greeter_test_fixture.cpp
     └── CMakeLists.txt
+
+```cmake
+# CMakeLists.txt (excerpt)
+add_executable( greeter_test_fixture
+    tests/greeter_test_fixture.cpp
+    src/greeter.c
+)
+target_link_libraries( greeter_test_fixture ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
+gtest_discover_tests( greeter_test_fixture )
+```
 
 ```c++
 // greeter_test_fixture.cpp
@@ -407,15 +501,23 @@ multiple input sets automatically.
 
 ## Example
 
-    gtest4c/
+    GTest4C/
     ├── src/
     │   ├── greeter.c
-    │   ├── greeter.h
-    │   ├── logger.c
-    │   └── logger.h
+    │   └── greeter.h
     ├── tests/
     │   └── greeter_param_test.cpp
     └── CMakeLists.txt
+
+```cmake
+# CMakeLists.txt (excerpt)
+add_executable( greeter_param_test
+    tests/greeter_param_test.cpp
+    src/greeter.c
+)
+target_link_libraries( greeter_param_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
+gtest_discover_tests( greeter_param_test )
+```
 
 ```c++
 // greeter_param_test.cpp
@@ -530,7 +632,7 @@ verifies that all declared expectations were met at test teardown.
 
 ## Example
 
-    gtest4c/
+    GTest4C/
     ├── src/
     │   ├── greeter.c
     │   └── greeter.h
@@ -541,6 +643,17 @@ verifies that all declared expectations were met at test teardown.
     │   ├── logger_mock.hpp
     │   └── single.hpp
     └── CMakeLists.txt
+
+```cmake
+# CMakeLists.txt (excerpt)
+add_executable( greeter_mock_test
+    tests/greeter_mock_test.cpp
+    src/greeter.c
+    mock/logger_mock.cpp
+)
+target_link_libraries( greeter_mock_test ${GTEST_LIBRARIES} gmock gmock_main pthread )
+gtest_discover_tests( greeter_mock_test )
+```
 
 ```c++
 // logger_mock.hpp
@@ -580,7 +693,6 @@ int loggerWriteLog(const char *message) {
 #include <gtest/gtest.h>
 extern "C" {
 #include "greeter.h"
-#include "logger.h"
 }
 #include "logger_mock.hpp"
 
@@ -723,15 +835,23 @@ ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
 
 ##  Example
 
-    gtest4c/
+    GTest4C/
     ├── src/
     │   ├── greeter.c
-    │   ├── greeter.h
-    │   ├── logger.c
-    │   └── logger.h
+    │   └── greeter.h
     ├── tests/
     │   └── greeter_death_test.cpp
     └── CMakeLists.txt
+
+```cmake
+# CMakeLists.txt (excerpt)
+add_executable( greeter_death_test
+    tests/greeter_death_test.cpp
+    src/greeter.c
+)
+target_link_libraries( greeter_death_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
+gtest_discover_tests( greeter_death_test )
+```
 
 ```c++
 // greeter_death_test.cpp
@@ -776,39 +896,6 @@ TEST(GreeterDeathTest, SegfaultsForInvalidSelfArg)
 
 For the complete reference, see
 [Death Assertions](https://google.github.io/googletest/reference/assertions.html#death)
-in [[GTest Guide][]].
-
-
-# Setting Up
-
-To use GTest for C code, the followings are needed:
-
-1.	GoogleTest installed (via package manager or as a submodule in your project).
-2.	CMake or Makefile configuration that links C modules into a C++ test executable.
-3.	C headers wrapped with extern "C" when included in C++ files, so that function names are not mangled.
-
-_CMakeLists.txt_:
-
-```cmake
-cmake_minimum_required(VERSION 3.14)
-project(my_project)
-
-# GoogleTest requires at least C++17
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
-  # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
-```
-
-For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
 in [[GTest Guide][]].
 
 

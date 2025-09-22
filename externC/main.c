@@ -1,6 +1,5 @@
 // main.c
 #include "hash.h"
-
 #include <stdio.h>
 #include <stdint.h>
 

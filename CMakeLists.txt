@@ -1,8 +1,8 @@
+# CMakeLists.txt
 cmake_minimum_required(VERSION 3.14)
 project(GTest4C C CXX)
 
-# GoogleTest requires at least C++17
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17) # GTest requires at least C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -ggdb")
@@ -18,7 +18,6 @@ if(COV)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
-
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -26,17 +25,21 @@ FetchContent_Declare(
   # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
-
 include(GoogleTest)
 include(CTest)
 
+
+add_library( logger SHARED
+    lib/logger/logger.c
+)
+
+
 include_directories(
     {GTEST_INCLUDE_DIRS}
+    lib/logger
     src
     mock
 )
@@ -45,36 +48,32 @@ include_directories(
 add_executable( greeter_test
     tests/greeter_test.cpp
     src/greeter.c
-    src/logger.c
 )
-target_link_libraries( greeter_test ${GTEST_LIBRARIES} gmock gmock_main pthread )
+target_link_libraries( greeter_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
 gtest_discover_tests( greeter_test )
 
 
 add_executable( greeter_test_fixture
     tests/greeter_test_fixture.cpp
     src/greeter.c
-    src/logger.c
 )
-target_link_libraries( greeter_test_fixture ${GTEST_LIBRARIES} gmock gmock_main pthread )
+target_link_libraries( greeter_test_fixture ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
 gtest_discover_tests( greeter_test_fixture )
 
 
 add_executable( greeter_param_test
     tests/greeter_param_test.cpp
     src/greeter.c
-    src/logger.c
 )
-target_link_libraries( greeter_param_test ${GTEST_LIBRARIES} gmock gmock_main pthread )
+target_link_libraries( greeter_param_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
 gtest_discover_tests( greeter_param_test )
 
 
 add_executable( greeter_death_test
     tests/greeter_death_test.cpp
     src/greeter.c
-    src/logger.c
 )
-target_link_libraries( greeter_death_test ${GTEST_LIBRARIES} gmock gmock_main pthread )
+target_link_libraries( greeter_death_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
 gtest_discover_tests( greeter_death_test )
 
 

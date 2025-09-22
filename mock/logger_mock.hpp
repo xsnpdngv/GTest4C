@@ -3,10 +3,10 @@
 #define LOGGER_MOCK_HPP_
 
 #include <gmock/gmock.h>
-#include "single.hh"
-// extern "C" {
-// #include "logger.h"
-// }
+#include "single.hpp"
+extern "C" {
+#include "logger.h"
+}
 
 class LoggerMock : public Single<LoggerMock>
 {

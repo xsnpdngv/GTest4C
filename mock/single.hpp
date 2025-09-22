@@ -1,5 +1,6 @@
-#ifndef SINGLE_HH_
-#define SINGLE_HH_
+// single.hpp
+#ifndef SINGLE_HPP_
+#define SINGLE_HPP_
 
 #include <stdexcept>
 
@@ -39,4 +40,4 @@ template<typename T>
 T *Single<T>::instance = nullptr;
 
 
-#endif
+#endif // SINGLE_HPP_

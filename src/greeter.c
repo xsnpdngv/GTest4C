@@ -1,6 +1,6 @@
 // greeter.c
 #include "greeter.h"
-#include "logger.h"
+#include "logger.h"  // external dependency
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,7 +24,7 @@ const char *greeterGreet(greeter_t *self, const char *name)
 {
     if( ! self) { return NULL; }
     snprintf(self->buffer, sizeof(self->buffer), "%s, %s!", self->greeting, name ?: "World");
-    loggerWriteLog(self->buffer);
+    loggerWriteLog(self->buffer); // external dependency
     return self->buffer;
 }
 

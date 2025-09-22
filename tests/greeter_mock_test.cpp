@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 extern "C" {
 #include "greeter.h"
-#include "logger.h"
 }
 #include "logger_mock.hpp"
 
