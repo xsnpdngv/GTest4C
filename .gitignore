@@ -1,6 +1,7 @@
 # Work Directories
 build
 Testing
+ctest
 .vscode
 .cache
 

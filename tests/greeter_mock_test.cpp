@@ -1,5 +1,6 @@
 // greeter_mock_test.cpp
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 extern "C" {
 #include "greeter.h"
 }
@@ -13,7 +14,9 @@ using ::testing::AtLeast;
 using ::testing::ResultOf;
 using ::testing::Eq;
 using ::testing::StrEq;
+using ::testing::StrCaseEq;
 using ::testing::MatchesRegex;
+using ::testing::HasSubstr;
 using ::testing::Pointee;
 using ::testing::Pointer;
 using ::testing::AllOf;
@@ -45,7 +48,7 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
 {
     NiceMock<LoggerMock> logger;
     EXPECT_CALL(logger, LoggerWriteLog(_)).Times(AnyNumber());
-    EXPECT_CALL(logger, LoggerWriteLog(MatchesRegex(".*Siri.*"))).Times(AtLeast(2));
+    EXPECT_CALL(logger, LoggerWriteLog(HasSubstr("Siri"))).Times(AtLeast(2));
 
     auto h = greeterCreate("Hey");
     greeterGreet(h, "You");
@@ -53,7 +56,6 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
     greeterGreet(h, "Siri");
     greeterGreet(h, "Ho");
     greeterGreet(h, "Siri");
-
     greeterDestroy(&h);
 }
 
@@ -65,7 +67,7 @@ TEST(GreeterTest, CallsLoggerInOrder)
     {
         InSequence seq;
         EXPECT_CALL(logger, LoggerWriteLog(StrEq("Yo, Dude!")));
-        EXPECT_CALL(logger, LoggerWriteLog(StrEq("Yo, MTV Raps!")));
+        EXPECT_CALL(logger, LoggerWriteLog(StrCaseEq("YO, MTV RAPS!")));
     }
 
     auto y = greeterCreate("Yo");

@@ -123,7 +123,6 @@ headers.
         ├── main.c
         └── CMakeLists.txt
 
-
 ```cpp
 // hash.h
 #ifndef HASH_H_
@@ -154,7 +153,7 @@ size_t hash_string(const char *str) { return std::hash<std::string>{}(str); }
 
 int main(void)
 {
-    const char *s = "Hello, C and C++!";
+    const char *s = "Hello, C plus C++!";
     size_t h = hash_string(s);
     printf("Hash of '%s' is %zu\n", s, h);
     return 0;
@@ -180,7 +179,7 @@ add_executable( main
 cmake -S . -B build
 cmake --build build
 build/main
-# --> Hash of 'Hello, C and C++!' is 2115457373660723382
+# --> Hash of 'Hello, C plus C++!' is 5909823269864486160
 ```
 
 
@@ -351,7 +350,6 @@ GTest distinguishes between:
 
 This distinction allows precise control over test flow and error reporting.
 
-
 ## Example
 
     GTest4C/
@@ -375,9 +373,21 @@ gtest_discover_tests( greeter_test )
 ```c++
 // greeter_test.cpp
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 extern "C" {
 #include "greeter.h"
 }
+
+using ::testing::AllOf;
+using ::testing::Not;
+using ::testing::Lt; // less than
+using ::testing::Gt; // greater than
+using ::testing::StartsWith;
+using ::testing::EndsWith;
+using ::testing::HasSubstr;
+using ::testing::ContainsRegex;
+using ::testing::MatchesRegex;
+using ::testing::ResultOf;
 
 /*
 TEST(TestSuiteName, TestName) {
@@ -431,19 +441,87 @@ TEST(GreeterTest, GreetsGenerally)
 TEST(GreeterTest, GreetsPersonally)
 {
     auto g = greeterCreate("Good Morning");
-    EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, Sunshine!");
     EXPECT_STREQ(greeterGreet(g, "Vietnam"), "Good Morning, Vietnam!");
+    EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, Sunshine!");
+    EXPECT_THAT(greeterGreet(g, "Sunshine"), AllOf(StartsWith("Go"), EndsWith("shine!")));
     greeterDestroy(&g);
 
     g = greeterCreate("Bonjour");
-    EXPECT_STREQ(greeterGreet(g, "Alice"), "Bonjour, Alice!");
-    EXPECT_STREQ(greeterGreet(g, "Bob"), "Bonjour, Bob!");
+    const char *str = greeterGreet(g, "Alice");
+    EXPECT_STREQ(str, "Bonjour, Alice!");
+    EXPECT_THAT(str, HasSubstr("our, Ali"));
+    EXPECT_THAT(str, ContainsRegex("on.*ice"));
+
+    str = greeterGreet(g, "Bob");
+    EXPECT_STREQ(str, "Bonjour, Bob!");
+    EXPECT_THAT(str, MatchesRegex("Bo.*Bo.*"));
+    EXPECT_THAT(str, ResultOf(strlen, 13));
+    EXPECT_THAT(str, ResultOf([](const char *s){ return std::count(s, s+strlen(s), 'o'); },
+                              AllOf(Not(Lt(3)), Not(Gt(3)))));
     greeterDestroy(&g);
 }
 ```
 
-For the complete rerefence, see
+## Assert Macros
+
+```c++
+EXPECT_TRUE( condition )
+EXPECT_FALSE( condition )
+EXPECT_EQ( val1, val2 )
+EXPECT_NE( val1, val2 )
+EXPECT_LT( val1, val2 )  // <
+EXPECT_LE( val1, val2 )  // <=
+EXPECT_GT( val1, val2 )  // >
+EXPECT_GE( val1, val2 )  // >=
+EXPECT_STREQ( str1, str2 )
+EXPECT_STRNE( str1, str2 )
+EXPECT_STRCASEEQ( str1, str2 )
+EXPECT_STRCASENE( str1, str2 )
+EXPECT_DEATH( statement, matcher )
+EXPECT_EXIT( statement, predicate, matcher )
+EXPECT_THAT( actual_value, matcher )
+```
+
+For the complete reference, see
 [Assertions](https://google.github.io/googletest/reference/assertions.html)
+in [[GTest Guide][]].
+
+## Matchers
+
+```c++
+Eq(value)  // or value
+Ge(value)  // >=
+Gt(value)  // >
+Le(value)  // <=
+Lt(value)  // <
+Ne(value)  // !=
+
+IsFalse()
+IsTrue()
+IsNull()
+NotNull()
+
+ContainsRegex(string)
+EndsWith(suffix)
+HasSubstr(string)
+IsEmpty()  // ""
+MathesRegex(string)
+StartsWith(prefix)
+StrCaseEq(string)
+StrCaseNe(string)
+StrEq(string)
+StrNe(string)
+
+ResultOf(func, matcher)  // func(argument) matches matcher
+AllOf(m1, m2, ..., mn) // argument matches ALL of the matchers m1 to mn.
+AnyOf(m1, m2, ..., mn) // argument matches ANY of the matchers m1 to mn.
+Conditional(cond, m1, m2) // Matches matcher m1 if cond evaluates to true, else matches m2.
+
+MATCHER(IsEven, "") { return (arg % 2) == 0; } // Defines a matcher IsEven() to match an even number.
+```
+
+For the complete reference, see
+[Matchers](https://google.github.io/googletest/reference/matchers.html)
 in [[GTest Guide][]].
 
 
@@ -808,6 +886,7 @@ int loggerWriteLog(const char *message) {
 ```c++
 // greeter_mock_test.cpp
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 extern "C" {
 #include "greeter.h"
 }
@@ -1028,7 +1107,7 @@ build/greeter_test --gtest_output=json:results.json
 ```
 
 
-# CTest
+# CTest: A Unified Test Runner
 
 CTest is CMake’s companion test driver. It provides a consistent way to
 discover, run, and report unit tests across projects and platforms. When
@@ -1069,11 +1148,43 @@ cov_toggle=OFF
 
 cmake -S ${src_dir} -B ${build_dir} -DCOV=${cov_toggle}
 cmake --build ${build_dir}
-ctest --test-dir ${build_dir} -D Experimental
+ctest --test-dir ${build_dir}
 ```
 
 
 # CDash: Dashboard Intergration
+
+CDash is a web-based dashboard system developed by Kitware (the creators
+of CMake and CTest). It is designed to collect, store, and visualize the
+results of software builds and tests.
+
+[https://my.cdash.org/](https://my.cdash.org/)
+
+```
+   +-----------------+
+   |   Source Code   |
+   +-----------------+
+            |
+            v
+   +-----------------+
+   |     CMake       |   (configure & generate build system)
+   +-----------------+
+            |
+            v
+   +-----------------+
+   |     Build       |   (compile project & tests)
+   +-----------------+
+            |
+            v
+   +-----------------+
+   |     CTest       |   (run tests, coverage, memcheck)
+   +-----------------+
+            |
+            v
+   +-----------------+
+   |     CDash       |   (dashboard: visualize results)
+   +-----------------+
+```
 
 ```cmake
 # CTestConfig.cmake
@@ -1089,6 +1200,18 @@ set(CTEST_DROP_SITE_CDASH TRUE)
 find_program(CTEST_MEMORYCHECK_COMMAND valgrind)
 set(CTEST_MEMORYCHECK_TYPE "Valgrind")
 set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --error-exitcode=1")
+```
+
+```bash
+src_dir=.
+cov_test_dir=ctest/cov
+mem_test_dir=ctest/mem
+
+cmake -S ${src_dir} -B ${cov_test_dir} -DCOV=ON
+ctest --test-dir ${cov_test_dir} -D Experimental
+
+cmake -S ${src_dir} -B ${mem_test_dir}
+ctest --test-dir ${mem_test_dir} -D MemoryCheck
 ```
 
 

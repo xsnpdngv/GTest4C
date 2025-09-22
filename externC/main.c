@@ -5,7 +5,7 @@
 
 int main(void)
 {
-    const char *s = "Hello, C and C++!";
+    const char *s = "Hello, C plus C++!";
     size_t h = hash_string(s);
     printf("Hash of '%s' is %zu\n", s, h);
     return 0;

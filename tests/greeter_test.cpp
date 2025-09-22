@@ -1,8 +1,20 @@
 // greeter_test.cpp
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 extern "C" {
 #include "greeter.h"
 }
+
+using ::testing::AllOf;
+using ::testing::Not;
+using ::testing::Lt; // less than
+using ::testing::Gt; // greater than
+using ::testing::StartsWith;
+using ::testing::EndsWith;
+using ::testing::HasSubstr;
+using ::testing::ContainsRegex;
+using ::testing::MatchesRegex;
+using ::testing::ResultOf;
 
 /*
 TEST(TestSuiteName, TestName) {
@@ -56,12 +68,22 @@ TEST(GreeterTest, GreetsGenerally)
 TEST(GreeterTest, GreetsPersonally)
 {
     auto g = greeterCreate("Good Morning");
-    EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, Sunshine!");
     EXPECT_STREQ(greeterGreet(g, "Vietnam"), "Good Morning, Vietnam!");
+    EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, Sunshine!");
+    EXPECT_THAT(greeterGreet(g, "Sunshine"), AllOf(StartsWith("Go"), EndsWith("shine!")));
     greeterDestroy(&g);
 
     g = greeterCreate("Bonjour");
-    EXPECT_STREQ(greeterGreet(g, "Alice"), "Bonjour, Alice!");
-    EXPECT_STREQ(greeterGreet(g, "Bob"), "Bonjour, Bob!");
+    const char *str = greeterGreet(g, "Alice");
+    EXPECT_STREQ(str, "Bonjour, Alice!");
+    EXPECT_THAT(str, HasSubstr("our, Ali"));
+    EXPECT_THAT(str, ContainsRegex("on.*ice"));
+
+    str = greeterGreet(g, "Bob");
+    EXPECT_STREQ(str, "Bonjour, Bob!");
+    EXPECT_THAT(str, MatchesRegex("Bo.*Bo.*"));
+    EXPECT_THAT(str, ResultOf(strlen, 13));
+    EXPECT_THAT(str, ResultOf([](const char *s){ return std::count(s, s+strlen(s), 'o'); },
+                              AllOf(Not(Lt(3)), Not(Gt(3)))));
     greeterDestroy(&g);
 }
