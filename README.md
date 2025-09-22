@@ -1,13 +1,12 @@
 % GoogleTest for Testing C Code  
 % Tamás Dezső  
 % Sept 23, 2025  
-<!-- pandoc README.md -o GTest_for_C_v1.0.pdf \
+<!-- pandoc README.md -o GTest4C_2025-09-23.pdf \
     -V papersize:A4 \
     -V documentclass=scrartcl \
     -V geometry:margin=1in \
     -V colorlinks \
-    --toc \
-    --toc-depth=1 \
+    --toc --toc-depth=1 \
     --pdf-engine=xelatex \
     -V mainfont='Roboto Light' \
     -V monofont='Ubuntu Mono' \
@@ -190,6 +189,8 @@ build/main
 The following C code is used in the upcoming chapters as the code that
 needs to be tested.
 
+## Code
+
     GTest4C/
     └── src/
         ├── greeter.c
@@ -268,10 +269,27 @@ int loggerWriteLog(const char *message);
 #endif // LOGGER_H_
 ```
 
+## Regular Build
+
 ```cmake
-# CMakeLists.txt (excerpt)
+# CMakeLists.txt
+cmake_minimum_required(VERSION 3.10)
+project(cBuildWithCMake C)
+
 add_library( logger SHARED
-    lib/logger/logger.c
+    ../lib/logger/logger.c
+)
+
+include_directories(
+    ../lib/logger
+)
+
+add_executable( module_m
+    module_m.c
+    greeter.c
+)
+target_link_libraries( module_m
+    logger
 )
 ```
 
@@ -280,8 +298,8 @@ add_library( logger SHARED
 
 To use GTest for C code, the followings are needed:
 
-1.	GoogleTest installed (via package manager or as a submodule in your project).
-2.	CMake or Makefile configuration that links C modules into a C++ test executable.
+1.	GoogleTest installed, present as submodule or fetched on demand.
+2.	CMake or Makefile configuration that links C modules into a C++ test executables.
 3.	C headers wrapped with extern "C" when included in C++ files, so that function names are not mangled.
 
 
@@ -426,6 +444,105 @@ TEST(GreeterTest, GreetsPersonally)
 
 For the complete rerefence, see
 [Assertions](https://google.github.io/googletest/reference/assertions.html)
+in [[GTest Guide][]].
+
+
+# Death Tests: Verifying Program Termination
+
+In C projects, certain functions may have preconditions that, if
+violated, lead to program termination using `abort()`, `assert()`, or
+even segmentation faults (`SEGFAULT`s). While normal assertions check
+expected outputs, death tests allow you to verify that your code fails
+safely and predictably in these critical situations.
+
+GTest runs the code in a separate process, so abnormal termination does
+not stop the test runner.
+
+This is particularly useful for:
+
+- Validating assertion failures in C modules.
+- Ensuring that critical errors do not go unnoticed.
+- Testing safety-critical C code where illegal inputs must terminate the program.
+
+```c++
+// Verifies that statement causes the process to terminate with an
+// exit status that satisfies predicate, and produces stderr output
+// that matches matcher.
+EXPECT_EXIT(statement, exit_status_predicate, stderr_matcher)
+ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
+
+// Returns true if the program exited normally with the given exit
+// status code.
+::testing::ExitedWithCode(exit_code);
+
+// Returns true if the program was killed by the given signal.
+// Not available on Windows.
+::testing::KilledBySignal(signal_number);
+```
+
+##  Example
+
+    GTest4C/
+    ├── src/
+    │   ├── greeter.c
+    │   └── greeter.h
+    ├── tests/
+    │   └── greeter_death_test.cpp
+    └── CMakeLists.txt
+
+```cmake
+# CMakeLists.txt (excerpt)
+add_executable( greeter_death_test
+    tests/greeter_death_test.cpp
+    src/greeter.c
+)
+target_link_libraries( greeter_death_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
+gtest_discover_tests( greeter_death_test )
+```
+
+```c++
+// greeter_death_test.cpp
+#include <gtest/gtest.h>
+extern "C" {
+#include "greeter.h"
+}
+
+/*
+// Verifies that statement causes the process to terminate with an
+// exit status that satisfies predicate, and produces stderr output
+// that matches matcher.
+EXPECT_EXIT(statement, exit_status_predicate, stderr_matcher)
+ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
+
+// Returns true if the program exited normally with the given exit status code.
+::testing::ExitedWithCode(exit_code);
+
+// Returns true if the program was killed by the given signal.
+// Not available on Windows.
+::testing::KilledBySignal(signal_number);
+*/
+
+using testing::KilledBySignal;
+// using testing::ExitedWithCode;
+
+TEST(GreeterDeathTest, AbortsOnDestroyAssert)
+{
+    EXPECT_EXIT(greeterDestroy(NULL), KilledBySignal(SIGABRT), ".*Assertion.*");
+}
+
+TEST(GreeterDeathTest, SegfaultsForInvalidNameArg)
+{
+    EXPECT_EXIT(greeterCreate((const char *)4), KilledBySignal(SIGSEGV), ".*");
+}
+
+TEST(GreeterDeathTest, SegfaultsForInvalidSelfArg)
+{
+    EXPECT_EXIT(greeterGreet((greeter_t *)42, "Joe Black"), KilledBySignal(SIGSEGV), ".*");
+}
+```
+
+For the complete reference, see
+[Death Assertions](https://google.github.io/googletest/reference/assertions.html#death)
 in [[GTest Guide][]].
 
 
@@ -662,9 +779,9 @@ gtest_discover_tests( greeter_mock_test )
 
 #include <gmock/gmock.h>
 #include "single.hpp"
-// extern "C" {
-// #include "logger.h"
-// }
+extern "C" {
+#include "logger.h"
+}
 
 class LoggerMock : public Single<LoggerMock>
 {
@@ -798,105 +915,6 @@ TEST(GreeterMockTest, IgnoresLoggerError2)
     greeterDestroy(&i);
 }
 ```
-
-
-# Death Tests: Verifying Program Termination
-
-In C projects, certain functions may have preconditions that, if
-violated, lead to program termination using `abort()`, `assert()`, or
-even segmentation faults (`SEGFAULT`s). While normal assertions check
-expected outputs, death tests allow you to verify that your code fails
-safely and predictably in these critical situations.
-
-GTest runs the code in a separate process, so abnormal termination does
-not stop the test runner.
-
-This is particularly useful for:
-
-- Validating assertion failures in C modules.
-- Ensuring that critical errors do not go unnoticed.
-- Testing safety-critical C code where illegal inputs must terminate the program.
-
-```c++
-// Verifies that statement causes the process to terminate with an
-// exit status that satisfies predicate, and produces stderr output
-// that matches matcher.
-EXPECT_EXIT(statement, exit_status_predicate, stderr_matcher)
-ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
-
-// Returns true if the program exited normally with the given exit
-// status code.
-::testing::ExitedWithCode(exit_code);
-
-// Returns true if the program was killed by the given signal.
-// Not available on Windows.
-::testing::KilledBySignal(signal_number);
-```
-
-##  Example
-
-    GTest4C/
-    ├── src/
-    │   ├── greeter.c
-    │   └── greeter.h
-    ├── tests/
-    │   └── greeter_death_test.cpp
-    └── CMakeLists.txt
-
-```cmake
-# CMakeLists.txt (excerpt)
-add_executable( greeter_death_test
-    tests/greeter_death_test.cpp
-    src/greeter.c
-)
-target_link_libraries( greeter_death_test ${GTEST_LIBRARIES} gmock gmock_main pthread logger )
-gtest_discover_tests( greeter_death_test )
-```
-
-```c++
-// greeter_death_test.cpp
-#include <gtest/gtest.h>
-extern "C" {
-#include "greeter.h"
-}
-
-/*
-// Verifies that statement causes the process to terminate with an
-// exit status that satisfies predicate, and produces stderr output
-// that matches matcher.
-EXPECT_EXIT(statement, exit_status_predicate, stderr_matcher)
-ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
-
-// Returns true if the program exited normally with the given exit status code.
-::testing::ExitedWithCode(exit_code);
-
-// Returns true if the program was killed by the given signal.
-// Not available on Windows.
-::testing::KilledBySignal(signal_number);
-*/
-
-using testing::KilledBySignal;
-// using testing::ExitedWithCode;
-
-TEST(GreeterDeathTest, AbortsOnDestroyAssert)
-{
-    EXPECT_EXIT(greeterDestroy(NULL), KilledBySignal(SIGABRT), ".*Assertion.*");
-}
-
-TEST(GreeterDeathTest, SegfaultsForInvalidNameArg)
-{
-    EXPECT_EXIT(greeterCreate((const char *)4), KilledBySignal(SIGSEGV), ".*");
-}
-
-TEST(GreeterDeathTest, SegfaultsForInvalidSelfArg)
-{
-    EXPECT_EXIT(greeterGreet((greeter_t *)42, "Joe Black"), KilledBySignal(SIGSEGV), ".*");
-}
-```
-
-For the complete reference, see
-[Death Assertions](https://google.github.io/googletest/reference/assertions.html#death)
-in [[GTest Guide][]].
 
 
 # CI: Running GTest with JSON Output
