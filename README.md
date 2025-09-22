@@ -1063,85 +1063,35 @@ build/greeter_test --gtest_output=json:results.json
 ```json
 /* results.json */
 {
-  "tests": 6,
+  "tests": 1,
   "failures": 1,
   "disabled": 0,
   "errors": 0,
-  "timestamp": "2025-09-21T22:01:28Z",
+  "timestamp": "2025-09-22T16:42:09Z",
   "time": "0s",
   "name": "AllTests",
   "testsuites": [
     {
-      "name": "GreeterTest",
-      "tests": 6,
+      "name": "GreeterTestFixture",
+      "tests": 1,
       "failures": 1,
       "disabled": 0,
       "errors": 0,
-      "timestamp": "2025-09-21T22:01:28Z",
+      "timestamp": "2025-09-22T16:42:09Z",
       "time": "0s",
       "testsuite": [
         {
-          "name": "DoesntCreateGreeter",
-          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
-          "line": 13,
-          "status": "RUN",
-          "result": "COMPLETED",
-          "timestamp": "2025-09-21T22:01:28Z",
-          "time": "0s",
-          "classname": "GreeterTest"
-        },
-        {
-          "name": "CreatesGreeter",
-          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
-          "line": 19,
-          "status": "RUN",
-          "result": "COMPLETED",
-          "timestamp": "2025-09-21T22:01:28Z",
-          "time": "0s",
-          "classname": "GreeterTest"
-        },
-        {
-          "name": "DestroysGreeter",
-          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
-          "line": 30,
-          "status": "RUN",
-          "result": "COMPLETED",
-          "timestamp": "2025-09-21T22:01:28Z",
-          "time": "0s",
-          "classname": "GreeterTest"
-        },
-        {
-          "name": "ReturnsNullIfNoSelf",
-          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
-          "line": 42,
-          "status": "RUN",
-          "result": "COMPLETED",
-          "timestamp": "2025-09-21T22:01:28Z",
-          "time": "0s",
-          "classname": "GreeterTest"
-        },
-        {
-          "name": "GreetsGenerally",
-          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
-          "line": 49,
-          "status": "RUN",
-          "result": "COMPLETED",
-          "timestamp": "2025-09-21T22:01:28Z",
-          "time": "0s",
-          "classname": "GreeterTest"
-        },
-        {
           "name": "GreetsPersonally",
-          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp",
-          "line": 56,
+          "file": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test_fixture.cpp",
+          "line": 29,
           "status": "RUN",
           "result": "COMPLETED",
-          "timestamp": "2025-09-21T22:01:28Z",
+          "timestamp": "2025-09-22T16:42:09Z",
           "time": "0s",
-          "classname": "GreeterTest",
+          "classname": "GreeterTestFixture",
           "failures": [
             {
-              "failure": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test.cpp:59\nExpected equality of these values:\n  greeterGreet(g, \"Sunshine\")\n    Which is: \"Good Morning, Sunshine!\"\n  \"Good Morning, SunshinE!\"\n",
+              "failure": "\/home\/dev\/git\/GTest4C\/tests\/greeter_test_fixture.cpp:31\nExpected equality of these values:\n  greeterGreet(g_, \"Szia, Szevasz\")\n    Which is: \"Hello, Szia, Szevasz!\"\n  \"Hello, Szia, SzevasZ!\"\n",
               "type": ""
             }
           ]
@@ -1186,6 +1136,9 @@ Command                     | Description
 `ctest --stop-on-failure`   | Stop after the first failing test
 
 : CTest Cheat Sheet
+
+
+## Build and Run Tests
 
 ```bash
 src_dir=.
@@ -1247,6 +1200,8 @@ find_program(CTEST_MEMORYCHECK_COMMAND valgrind)
 set(CTEST_MEMORYCHECK_TYPE "Valgrind")
 set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --error-exitcode=1")
 ```
+
+## Run Tests and Submit Results
 
 ```bash
 src_dir=.
