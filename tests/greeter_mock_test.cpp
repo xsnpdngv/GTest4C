@@ -57,6 +57,7 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
     greeterGreet(h, "Alexa");
     greeterGreet(h, "Siri");
     greeterGreet(h, "Ho");
+    // comment it out for failing assert:
     greeterGreet(h, "Siri");
     greeterDestroy(&h);
 }
@@ -64,12 +65,12 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
 TEST(GreeterMockTest, CallsLoggerWithMessageInOrder)
 {
     NiceMock<LoggerMock> logger;
-    EXPECT_CALL(logger, LoggerWriteLog(_)).Times(AnyNumber());
     Expectation ladies =
         EXPECT_CALL(logger, LoggerWriteLog(StrEq("Welcome, Ladies!")));
     EXPECT_CALL(logger, LoggerWriteLog(HasSubstr("Bob"))).After(ladies);
 
     auto h = greeterCreate("Welcome");
+    // change their order for failing expectation:
     greeterGreet(h, "Ladies");
     greeterGreet(h, "Bob");
     greeterDestroy(&h);

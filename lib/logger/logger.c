@@ -4,5 +4,5 @@
 
 int loggerWriteLog(const char *message)
 {
-    return printf("[LOG] %s\n", message);
+    return fprintf(stderr, "[LOG] %s\n", message);
 }

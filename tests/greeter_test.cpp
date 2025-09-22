@@ -71,6 +71,8 @@ TEST(GreeterTest, GreetsPersonally)
     EXPECT_STREQ(greeterGreet(g, "Vietnam"), "Good Morning, Vietnam!");
     EXPECT_STREQ(greeterGreet(g, "Sunshine"), "Good Morning, Sunshine!");
     EXPECT_THAT(greeterGreet(g, "Sunshine"), AllOf(StartsWith("Go"), EndsWith("shine!")));
+    // uncomment for a failing assert:
+    // EXPECT_THAT(greeterGreet(g, "Sunshine"), AllOf(StartsWith("Good"), EndsWith("Sun")));
     greeterDestroy(&g);
 
     g = greeterCreate("Bonjour");
@@ -95,7 +97,10 @@ MATCHER_P2(HasCharCount, ch, charCount,
 
 TEST(GreeterTest, GreetsPersonallyWithMatcher)
 {
-    auto g = greeterCreate("Helló");
-    EXPECT_THAT(greeterGreet(g, "lila ló"), HasCharCount('l', 5));
+    auto g = greeterCreate("Heló");
+    auto s = greeterGreet(g, "lila ló");
+    EXPECT_THAT(s, HasCharCount('l', 4));
+    // uncomment for a failing assert:
+    // EXPECT_THAT(s, HasCharCount('X', 2));
     greeterDestroy(&g);
 }

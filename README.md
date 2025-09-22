@@ -103,10 +103,9 @@ CMakeLists.txt. CTest then provides a uniform way to discover and
 execute tests, report results, and integrate with CI systems and
 dashboards (such as CDash).
 
-CMake and CTest let you focus more on your code and tests, and less on
-wrestling with platform-specific build and test scripts. They give your
-project a professional, reproducible, and maintainable build and test
-setup from the start.
+CMake and CTest let the focus more on code and tests, and give projects
+a professional, reproducible, and maintainable build and test setup from
+the start.
 
 
 # C plus C++
@@ -165,8 +164,6 @@ int main(void)
 cmake_minimum_required(VERSION 3.10)
 project(CppHashExample C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-
 add_executable( main
     main.c
     hash.cpp
@@ -176,6 +173,7 @@ add_executable( main
 ## Build and Run
 
 ```bash
+cd externC
 cmake -S . -B build
 cmake --build build
 build/main
@@ -292,6 +290,17 @@ target_link_libraries( module_m
 )
 ```
 
+## Build and Run
+
+```bash
+cd src
+cmake -S . -B build
+cmake --build build
+build/module_m
+# --> [LOG] Hellloooo, Woooorld!
+#     Hellloooo, Woooorld!
+```
+
 
 # Setup GTest in CMake
 
@@ -311,10 +320,8 @@ set(CMAKE_CXX_STANDARD 17) # GTest requires at least C++17
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FetchContent)
-FetchContent_Declare(
-  googletest
+FetchContent_Declare( googletest
   URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
-  # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
 )
 FetchContent_MakeAvailable(googletest)
 
@@ -329,7 +336,7 @@ include_directories(
     mock
 )
 
-# ...
+# Test executables...
 ```
 
 For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
@@ -468,10 +475,19 @@ MATCHER_P2(HasCharCount, ch, charCount,
 
 TEST(GreeterTest, GreetsPersonallyWithMatcher)
 {
-    auto g = greeterCreate("Helló");
-    EXPECT_THAT(greeterGreet(g, "lila ló"), HasCharCount('l', 5));
+    auto g = greeterCreate("Heló");
+    auto s = greeterGreet(g, "lila ló");
+    EXPECT_THAT(s, HasCharCount('l', 4));
     greeterDestroy(&g);
 }
+```
+
+## Build and Run Tests
+
+```bash
+cmake -S . -B build
+cmake --build build
+build/greeter_test # ctest --test-dir build -R "GreeterTest\\." --ouput-on-failure
 ```
 
 ## Assert Macros
@@ -973,7 +989,6 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
 TEST(GreeterMockTest, CallsLoggerWithMessageInOrder)
 {
     NiceMock<LoggerMock> logger;
-    EXPECT_CALL(logger, LoggerWriteLog(_)).Times(AnyNumber());
     Expectation ladies =
         EXPECT_CALL(logger, LoggerWriteLog(StrEq("Welcome, Ladies!")));
     EXPECT_CALL(logger, LoggerWriteLog(HasSubstr("Bob"))).After(ladies);
@@ -1166,22 +1181,22 @@ results of software builds and tests.
             |
             v
    +-----------------+
-   |     CMake       |   (configure & generate build system)
+   |      CMake      |   (configure & generate build system)
    +-----------------+
             |
             v
    +-----------------+
-   |     Build       |   (compile project & tests)
+   |      Build      |   (compile project & tests)
    +-----------------+
             |
             v
    +-----------------+
-   |     CTest       |   (run tests, coverage, memcheck)
+   |      CTest      |   (run tests, coverage, memcheck)
    +-----------------+
             |
             v
    +-----------------+
-   |     CDash       |   (dashboard: visualize results)
+   |      CDash      |   (dashboard: visualize results)
    +-----------------+
 ```
 

@@ -18,8 +18,7 @@ if(COV)
 endif()
 
 include(FetchContent)
-FetchContent_Declare(
-  googletest
+FetchContent_Declare( googletest
   URL https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip
   # URL file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-1.17.0.zip
   DOWNLOAD_EXTRACT_TIMESTAMP TRUE
