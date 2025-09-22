@@ -87,3 +87,15 @@ TEST(GreeterTest, GreetsPersonally)
                               AllOf(Not(Lt(3)), Not(Gt(3)))));
     greeterDestroy(&g);
 }
+
+MATCHER_P2(HasCharCount, ch, charCount,
+           "String has " + std::to_string(charCount) + " occurrences of '" + std::string(1, ch) + "'") {
+    return charCount == std::count(arg, arg + strlen(arg), ch);
+}
+
+TEST(GreeterTest, GreetsPersonallyWithMatcher)
+{
+    auto g = greeterCreate("Helló");
+    EXPECT_THAT(greeterGreet(g, "lila ló"), HasCharCount('l', 5));
+    greeterDestroy(&g);
+}

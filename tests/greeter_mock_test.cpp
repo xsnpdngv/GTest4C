@@ -8,22 +8,24 @@ extern "C" {
 
 using ::testing::NiceMock;
 using ::testing::Return;
-using ::testing::ReturnArg;
 using ::testing::AnyNumber;
 using ::testing::AtLeast;
-using ::testing::ResultOf;
-using ::testing::Eq;
 using ::testing::StrEq;
 using ::testing::StrCaseEq;
-using ::testing::MatchesRegex;
 using ::testing::HasSubstr;
-using ::testing::Pointee;
-using ::testing::Pointer;
-using ::testing::AllOf;
-using ::testing::NotNull;
 using ::testing::Invoke;
 using ::testing::InSequence;
+using ::testing::Expectation;
 using ::testing::_;
+
+/*
+EXPECT_CALL(mock_object, method_name (matchers...))
+    .Times(cardinality)            // at most once
+    .After(expectations...)        // any number of times
+    .WillOnce(action)              // any number of times
+    .WillRepeatedly(action)        // at most once
+    .With(multi_argument_matcher)  // at most once
+*/
 
 TEST(LoggerMockTest, LoggerMockWorks)
 {
@@ -51,7 +53,7 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
     EXPECT_CALL(logger, LoggerWriteLog(HasSubstr("Siri"))).Times(AtLeast(2));
 
     auto h = greeterCreate("Hey");
-    greeterGreet(h, "You");
+    greeterGreet(h, "Ladies");
     greeterGreet(h, "Alexa");
     greeterGreet(h, "Siri");
     greeterGreet(h, "Ho");
@@ -59,7 +61,21 @@ TEST(GreeterMockTest, CallsLoggerWithMessage)
     greeterDestroy(&h);
 }
 
-TEST(GreeterTest, CallsLoggerInOrder)
+TEST(GreeterMockTest, CallsLoggerWithMessageInOrder)
+{
+    NiceMock<LoggerMock> logger;
+    EXPECT_CALL(logger, LoggerWriteLog(_)).Times(AnyNumber());
+    Expectation ladies =
+        EXPECT_CALL(logger, LoggerWriteLog(StrEq("Welcome, Ladies!")));
+    EXPECT_CALL(logger, LoggerWriteLog(HasSubstr("Bob"))).After(ladies);
+
+    auto h = greeterCreate("Welcome");
+    greeterGreet(h, "Ladies");
+    greeterGreet(h, "Bob");
+    greeterDestroy(&h);
+}
+
+TEST(GreeterTest, CallsLoggerInSequence)
 {
     NiceMock<LoggerMock> logger;
 
