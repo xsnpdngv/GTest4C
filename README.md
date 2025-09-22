@@ -1072,30 +1072,23 @@ cmake --build ${build_dir}
 ctest --test-dir ${build_dir} -D Experimental
 ```
 
-## Adding Tests in CMake
 
-To enable CTest in a project, add the following to your CMakeLists.txt:
+# CDash: Dashboard Intergration
 
 ```cmake
-enable_testing()
+# CTestConfig.cmake
+set(CTEST_PROJECT_NAME "GTest4C")
+set(CTEST_NIGHTLY_START_TIME "00:00:00 UTC")
 
-add_executable(my_tests test_main.cpp)
-target_link_libraries(my_tests PRIVATE GTest::gtest_main)
+set(CTEST_DROP_METHOD "https")
+set(CTEST_DROP_SITE "my.cdash.org")
+set(CTEST_DROP_LOCATION "/submit.php?project=${CTEST_PROJECT_NAME}")
+set(CTEST_DROP_SITE_CDASH TRUE)
 
-include(GoogleTest)
-gtest_discover_tests(my_tests)
-```
-
-
-
-# Build
-
-```bash
-mkdir build
-cd build
-cmake ..
-make
-make test # or ctest
+# Memory checking
+find_program(CTEST_MEMORYCHECK_COMMAND valgrind)
+set(CTEST_MEMORYCHECK_TYPE "Valgrind")
+set(MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --error-exitcode=1")
 ```
 
 
