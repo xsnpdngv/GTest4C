@@ -181,10 +181,10 @@ build/main
 ```
 
 
-# C Code to Test
+# C Code under Test
 
 The following C code is used in the upcoming chapters as the code that
-needs to be tested.
+is being tested.
 
 ## Code
 
@@ -847,22 +847,141 @@ dependencies with controlled test doubles. While C doesn’t have built-in
 mocking, GTest (via GoogleMock) provides a way to mock functions called
 from C modules by declaring them in C++.
 
-GMock is your friend if any of the following problems is bothering you:
+GMock is our friend if any of the following problems is bothering us:
 
-- Your tests are slow as they depend on expensive resources (e.g. a database).
-- Your tests are brittle as some resources they use are unreliable (e.g. the network).
-- You want to test how your code handles failures but it’s not easy to cause them.
-- You need to make sure that your module interacts with other modules in the right way.
-- You want to “mock out” the dependencies, except that they don’t have mock implementations yet.
+- Our tests are slow as they depend on expensive resources (e.g. a database).
+- Our tests are brittle as some resources they use are unreliable (e.g. the network).
+- We want to test how your code handles failures but it’s not easy to cause them.
+- We need to make sure that our module interacts with other modules in the right way.
+- We want to “mock out” the dependencies, except that they don’t have mock implementations yet.
 
-The Nice, the Strict, and the Naggy
+A __mock__ is a stand-in for a real dependency. It behaves like the
+original interface but allows us to:
 
-- NiceMock: Ignores unexpected calls.
-- NaggyMock: Warns on unexpected calls (default).
-- StrictMock: Fails on unexpected calls.
+- Control behavior (specify what values functions return).
+- Verify interactions (check how our code called the dependency).
+- Avoid side effects (no files written, no network calls).
+
+
+Given the original interface in C:
+
+```c
+// foo.h
+typedef struct {
+    int i;
+    char c;
+} foo_t;
+
+foo_t *fooCreate(int i, char c);
+int fooDoThis(const foo_t *self, const char *str);
+void fooSetThat(foo_t *self, int arg);
+bool fooIsThatSet(const foo_t *self);
+void fooDestroy(foo_t **self);
+```
+
+Can be mocked as:
+
+```c++
+// foo_mock.hpp
+#include <gmock/gmock.h>
+#include "single.hpp"
+extern "C" {
+#include "foo.h"
+}
+
+class FooMock : public foo_t,
+                public Single<FooMock>
+{
+  public:
+    MOCK_METHOD(foo_t *, FooCreate, (int i, char c));
+    MOCK_METHOD(int, FooDoThis, (const foo_t *self, const char *str), (const));
+    MOCK_METHOD(void, FooSetThat, (foo_t *self, int val));
+    MOCK_METHOD(bool, FooIsThatSet, (const foo_t *self), (const));
+    MOCK_METHOD(void, FooDestroy, (foo_t **self));
+};
+```
+
+```c++
+// foo_mock.cpp
+#include "foo_mock.hpp"
+extern "C" {
+
+foo_t *fooCreate(int i, char c) {
+    return FooMock::GetInstance().FooCreate(i, c);
+}
+
+int fooDoThis(const foo_t *self, const char *str) {
+    return FooMock::GetInstance().FooDoThis(self, str);
+}
+
+void fooSetThat(foo_t *self, int val) {
+    return FooMock::GetInstance().FooDoThis(self, val);
+}
+
+bool fooIsThatSet(const foo_t *self) {
+    return FooMock::GetInstance().FooIsThatSet(self);
+}
+
+void fooDestroy(foo_t **self) {
+    return FooMock::GetInstance().FooDestroy(self);
+}
+
+} // extern "C"
+```
+
+## Mock types: The Nice, the Strict, and the Naggy
+
+```c++
+using ::testing::NiceMock;
+using ::testing::NaggyMock;
+using ::testing::StrictMock;
+
+NiceMock<FooMock> nice_foo;      // Ignores unexpected calls
+NaggyMock<FooMock> naggy_foo;    // Warns on unexpected calls (default)
+StrictMock<FooMock> strict_foo;  // Fails on unexpected calls
+```
+
+## Return Value
+
+- If not set explicitly, gMock uses default values
+    - `0`/`false`/`nullptr` for primitive types (int, double, bool, pointers)
+    - default constructed object for std lib and user defined classes
+- Explicitly defined value
+    - `ON_CALL` - stub behavior
+    - `EXPECT_CALL` - expectation
+- If neither default value nor default constructor exists for the return type: runtime error.
+- Global defaults can be customized with `DefaultValue<T>`.
+
+
+## Test Pattern
+
+```c++
+#include "gmock/gmock.h"
+#include "foo_mock.hpp"
+
+using ::testing::Return;
+
+TEST(ProdTest, DoesThat)
+{
+  NiceMock<FooMock> foo;
+
+  ON_CALL(foo, FooIsThatSet()).WillByDefault(Return(true));
+  // ... other default actions ...
+
+  EXPECT_CALL(foo, FooDoThis(_, 3))
+      .Times(2)
+      .WillOnce(Return(0)),
+      .WillOnce(Return(-1));
+  // ... other expectations ...
+
+  myProdFunc(&foo), "Let it rip";
+}
+```
 
 GMock evaluates expectations dynamically as the code runs, and finally
-verifies that all declared expectations were met at test teardown.
+verifies that all declared expectations were met at test teardown, when
+the mock object is destructed.
+
 
 ## Example
 

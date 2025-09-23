@@ -11,6 +11,7 @@ extern "C" {
 class LoggerMock : public Single<LoggerMock>
 {
   public:
+    LoggerMock(); // constructor: if gMock's default behavior is not good enough
     MOCK_METHOD(int, LoggerWriteLog, (const char *message));
 };
 
