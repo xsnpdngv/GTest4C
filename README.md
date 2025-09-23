@@ -184,12 +184,12 @@ build/main
 ```
 
 
-# C Code under Test
+# C Code Under Test
 
 The following C code is used in the upcoming chapters as the code that
 is being tested.
 
-## Code
+## Component
 
     GTest4C/
     └── src/
@@ -269,7 +269,26 @@ int loggerWriteLog(const char *message);
 #endif // LOGGER_H_
 ```
 
-## Regular Build
+## Application
+
+    GTest4C/
+    └── src/
+        ├── greeter.c
+        ├── greeter.h
+        ├── module_m.c
+        └── CMakeLists.txt
+
+```c
+// module_m.c
+#include "greeter.h"
+#include <stdio.h>
+
+int main()
+{
+    greeter_t *g __attribute__((cleanup(greeterDestroy))) = greeterCreate("Hellloooo");
+    printf("%s\n", greeterGreet(g, "Woooorld"));
+}
+```
 
 ```cmake
 # CMakeLists.txt
@@ -342,7 +361,8 @@ include_directories(
 # Test executables...
 ```
 
-For complete reference, see [Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
+For complete reference, see
+[Quickstart: CMake](https://google.github.io/googletest/quickstart-cmake.html)
 in [[GTest Guide][]].
 
 
@@ -498,8 +518,8 @@ build/greeter_test # ctest --test-dir build -R "GreeterTest\\." --ouput-on-failu
 ```c++
 EXPECT_TRUE( condition )
 EXPECT_FALSE( condition )
-EXPECT_EQ( val1, val2 )
-EXPECT_NE( val1, val2 )
+EXPECT_EQ( val1, val2 )  // ==
+EXPECT_NE( val1, val2 )  // !=
 EXPECT_LT( val1, val2 )  // <
 EXPECT_LE( val1, val2 )  // <=
 EXPECT_GT( val1, val2 )  // >
@@ -508,8 +528,10 @@ EXPECT_STREQ( str1, str2 )
 EXPECT_STRNE( str1, str2 )
 EXPECT_STRCASEEQ( str1, str2 )
 EXPECT_STRCASENE( str1, str2 )
-EXPECT_DEATH( statement, matcher )
-EXPECT_EXIT( statement, predicate, matcher )
+// death:
+EXPECT_DEATH( statement, stderr_matcher_regex )
+EXPECT_EXIT( statement, exit_status_predicate, stderr_matcher_regex )
+// general:
 EXPECT_THAT( actual_value, matcher )
 ```
 
@@ -577,8 +599,8 @@ This is particularly useful for:
 // Verifies that statement causes the process to terminate with an
 // exit status that satisfies predicate, and produces stderr output
 // that matches matcher.
-EXPECT_EXIT(statement, exit_status_predicate, stderr_matcher)
-ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher)
+EXPECT_EXIT(statement, exit_status_predicate, stderr_matcher_regex)
+ASSERT_EXIT(statement, exit_status_predicate, stderr_matcher_regex)
 
 // Returns true if the program exited normally with the given exit
 // status code.
@@ -882,7 +904,7 @@ bool fooIsThatSet(const foo_t *self);
 void fooDestroy(foo_t **self);
 ```
 
-Can be mocked as:
+The mock would look like this:
 
 ```c++
 // foo_mock.hpp
@@ -1257,14 +1279,15 @@ Command                     | Description
 `ctest`                     | Run all tests
 `ctest -N`                  | List tests without running
 `ctest -V`                  | Show test output while running
+`ctest --test-dir <dir>`    | Run tests in directory
 `ctest --output-on-failure` | Show output only for failed tests
 `ctest --rerun-failed`      | Re-run tests that failed last time
 `ctest -R <regex>`          | Run tests whose names match regex.
-`ctest -R "GreeterMock.*"`  | Run all tests in the `MathTest` suite
+`ctest -R "GreeterMock.*"`  | Run all tests in the `GreeterMock` suite
 `ctest -E <regex>`          | Exclude tests matching regex
 `ctest -R ".*" -E "Flaky"`  | Run all tests except those with “Flaky” in the name
 `ctest -I <start>,<end>`    | Run tests by index range
-`ctest --test-output-json results.json` | Write test results in JSON (CMake ≥ 3.21)
+`ctest --output-log results.json --output-log-format=json-v1` | Write results to JSON file
 `ctest --show-only=json-v1` | Show test list in JSON format
 `ctest -j <N>`              | Run tests in parallel with N jobs
 `ctest --timeout <sec>`     | Set a global timeout in seconds
@@ -1280,9 +1303,8 @@ Command                     | Description
 ```bash
 src_dir=.
 build_dir=build
-cov_toggle=OFF
 
-cmake -S ${src_dir} -B ${build_dir} -DCOV=${cov_toggle}
+cmake -S ${src_dir} -B ${build_dir}
 cmake --build ${build_dir}
 ctest --test-dir ${build_dir}
 ```

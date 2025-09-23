@@ -87,6 +87,7 @@ TEST(GreeterTest, GreetsPersonally)
     EXPECT_THAT(str, ResultOf(strlen, 13));
     EXPECT_THAT(str, ResultOf([](const char *s){ return std::count(s, s+strlen(s), 'o'); },
                               AllOf(Not(Lt(3)), Not(Gt(3)))));
+    // comment this out for a failing memory check:
     greeterDestroy(&g);
 }
 
