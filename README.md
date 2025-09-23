@@ -107,6 +107,9 @@ CMake and CTest let the focus more on code and tests, and give projects
 a professional, reproducible, and maintainable build and test setup from
 the start.
 
+See [[CMake examples][]] on GitHub for various kinds of projects and
+[[Mastering CMake][]] for complete reference.
+
 
 # C plus C++
 
@@ -1357,3 +1360,9 @@ ctest --test-dir ${mem_test_dir} -D MemoryCheck
 
 - [GTest Code]: https://github.com/google/googletest
     [GTest Code] GoogleTest on GitHub
+
+- [Mastering CMake]: https://cmake.org/cmake/help/book/mastering-cmake/
+    [Mastering CMake] CMake Home
+
+- [CMake examples]: https://github.com/ttroy50/cmake-examples
+    [CMake examples]
