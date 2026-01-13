@@ -1,6 +1,6 @@
 % GoogleTest for Testing C Code  
 % Tamás Dezső  
-% Sept 23, 2025  
+% January 13, 2026  
 <!-- pandoc README.md -o GTest4C_2025-09-23.pdf \
     -V papersize:A4 \
     -V documentclass=scrartcl \
@@ -846,7 +846,23 @@ INSTANTIATE_TEST_SUITE_P(
         GreetCase{ "Clarice", "Hello, Clarice!" }
     )
 );
+
+
+/*
+If a parameterized test needs to derive from an existing base test
+fixture (which already inherits from testing::Test), then inheriting
+from testing::TestWithParam<> is not suitable.
+
+In this case, use multiple inheritance with the base fixture and
+testing::WithParamInterface<> instead.
+
+Correct pattern:
+
+    class GreeterParamTest : public GreeterBaseTest,
+                             public testing::WithParamInterface<GreetCase>
+*/
 ```
+
 
 ## Parameter Generators
 
